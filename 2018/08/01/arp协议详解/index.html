@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="今天我打算整理下ARP协议的知识点,并且或者以这个简单的网络协议为开端,慢慢地了解其他的协议 我们都知道在网络通信中,我们的主机都有一个唯一的MAC地址与IP地址(或许并非全局唯一),只有设置好这两个地址才能对外通信.其中MAC地址对应于OSI七层模型中的第二层数据链路层(Datalink Layer);IP地址对应第三层网络层(Network Layer) 跨网段访问的寻址另说,如果有多个主机在">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ARP协议详解">
+<meta property="og:url" content="https://staight.github.io/2018/08/01/arp%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="今天我打算整理下ARP协议的知识点,并且或者以这个简单的网络协议为开端,慢慢地了解其他的协议 我们都知道在网络通信中,我们的主机都有一个唯一的MAC地址与IP地址(或许并非全局唯一),只有设置好这两个地址才能对外通信.其中MAC地址对应于OSI七层模型中的第二层数据链路层(Datalink Layer);IP地址对应第三层网络层(Network Layer) 跨网段访问的寻址另说,如果有多个主机在">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://staight.github.io/2018/08/01/arp%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3/ARP%E8%AF%B7%E6%B1%82%E7%A4%BA%E4%BE%8B.png">
+<meta property="og:image" content="https://staight.github.io/2018/08/01/arp%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3/ARP%E5%93%8D%E5%BA%94%E7%A4%BA%E4%BE%8B.png">
+<meta property="og:image" content="https://staight.github.io/2018/08/01/arp%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3/ARP%E5%A4%B4%E9%83%A8.png">
+<meta property="og:image" content="https://staight.github.io/2018/08/01/arp%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3/ARP%E8%AF%B7%E6%B1%82%E6%95%B0%E6%8D%AE%E5%8C%85.png">
+<meta property="og:image" content="https://staight.github.io/2018/08/01/arp%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3/ARP%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE%E5%8C%85.png">
+<meta property="og:image" content="https://staight.github.io/2018/08/01/arp%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3/%E6%97%A0%E5%81%BFARP%E7%A4%BA%E4%BE%8B.png">
+<meta property="og:image" content="https://staight.github.io/2018/08/01/arp%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3/%E6%97%A0%E5%81%BFARP%E6%95%B0%E6%8D%AE%E5%8C%85.png">
+<meta property="article:published_time" content="2018-08-01T07:34:17.000Z">
+<meta property="article:modified_time" content="2019-10-02T17:49:50.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="网络">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://staight.github.io/2018/08/01/arp%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3/ARP%E8%AF%B7%E6%B1%82%E7%A4%BA%E4%BE%8B.png">
+
+<link rel="canonical" href="https://staight.github.io/2018/08/01/arp%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>ARP协议详解 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2018/08/01/arp%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ARP协议详解
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-08-01 15:34:17" itemprop="dateCreated datePublished" datetime="2018-08-01T15:34:17+08:00">2018-08-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-03 01:49:50" itemprop="dateModified" datetime="2019-10-03T01:49:50+08:00">2019-10-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>今天我打算整理下<code>ARP</code>协议的知识点,并且或者以这个简单的网络协议为开端,慢慢地了解其他的协议</p>
+<p>我们都知道在网络通信中,我们的主机都有一个唯一的MAC地址与IP地址(或许并非全局唯一),只有设置好这两个地址才能对外通信.其中<code>MAC</code>地址对应于<code>OSI七层模型</code>中的第二层数据链路层(<code>Datalink Layer</code>);IP地址对应第三层网络层(<code>Network Layer</code>)</p>
+<p>跨网段访问的寻址另说,如果有多个主机在同一个网段,或者说在同一个广播域(由于<code>VLAN</code>等原因,两者并不完全相同),那么这些主机该怎么通信呢?这就涉及到<code>ARP</code>协议了</p>
+<h2 id="ARP简介"><a href="#ARP简介" class="headerlink" title="ARP简介"></a>ARP简介</h2><p>ARP的全称为<code>Address Resolution Protocol</code>,即地址解析协议.正如其名称所说一样,ARP协议用于将IP地址解析为MAC地址.ARP协议位于第三层</p>
+<p>ARP的地址解析过程只使用了两种数据包:ARP请求包和ARP响应包</p>
+<h3 id="ARP请求"><a href="#ARP请求" class="headerlink" title="ARP请求"></a>ARP请求</h3><p>当上层协议需要IP对IP通信时,<code>请求主机</code>需要构造数据包.但在此之前,<code>请求主机</code>还需要发送一个ARP请求包,向同一广播域中的所有主机请求<code>被请求主机</code>的MAC地址.随后,<code>请求主机</code>将数据包构造完成后发送给此广播域的二层设备,由它根据MAC地址决定此数据包的去向</p>
+<p>这个请求主机发送的ARP请求,基本上就是在问:”大家好,我的IP地址是<code>XX.XX.XX.XX</code>,MAC地址是<code>XX.XX.XX.XX.XX.XX</code>,我需要向IP地址为<code>YY.YY.YY.YY</code>的家伙发些东西,但我不知道它的硬件地址,你们谁有这个IP地址的,可否回复给我你的MAC地址?”</p>
+<p><img src="ARP%E8%AF%B7%E6%B1%82%E7%A4%BA%E4%BE%8B.png" alt="ARP请求示例"></p>
+<h3 id="ARP响应"><a href="#ARP响应" class="headerlink" title="ARP响应"></a>ARP响应</h3><p>请求主机发送的ARP数据包将被广播给同一广播域的所有设备.不是这个IP地址的设备将简单地丢弃这个数据包,而拥有这个IP地址的设备将发送一个ARP响应.就像是说:”你好,我就是你所找的那个拥有IP地址为<code>YY.YY.YY.YY</code>的,我的MAC地址为<code>YY.YY.YY.YY.YY.YY</code>.”</p>
+<p><img src="ARP%E5%93%8D%E5%BA%94%E7%A4%BA%E4%BE%8B.png" alt="ARP响应示例"></p>
+<h2 id="ARP详解"><a href="#ARP详解" class="headerlink" title="ARP详解"></a>ARP详解</h2><h3 id="ARP头部"><a href="#ARP头部" class="headerlink" title="ARP头部"></a>ARP头部</h3><p>ARP头部包含如下几个域:</p>
+<ol>
+<li>硬件类型:数据链路层使用的类型数据.大多数情况下这个类型都是以太网(类型1)</li>
+<li>协议类型:ARP请求正在使用的高层协议.可以是IPv4或IPv6</li>
+<li>硬件地址长度:使用的MAC地址的长度.以字节为单位</li>
+<li>协议地址长度:使用的逻辑地址的长度.以字节为单位</li>
+<li>操作:ARP数据包的功能.1表示请求,2表示响应</li>
+<li>发送方硬件地址:发送者的硬件地址</li>
+<li>发送方协议地址:发送者的高层协议地址.一般为IP地址</li>
+<li>目标硬件地址:目标接收方的硬件地址.ARP请求中为全零</li>
+<li>目标协议地址:目标接收方的高层协议地址.一般为IP地址</li>
+</ol>
+<p><img src="ARP%E5%A4%B4%E9%83%A8.png" alt="ARP头部"></p>
+<h3 id="ARP请求数据包"><a href="#ARP请求数据包" class="headerlink" title="ARP请求数据包"></a>ARP请求数据包</h3><p><img src="ARP%E8%AF%B7%E6%B1%82%E6%95%B0%E6%8D%AE%E5%8C%85.png" alt="ARP请求数据包"></p>
+<p>如图所示,该数据包是一个ARP请求.在数据链路层中,该数据包的源地址是此主机的MAC地址,即<code>a4:02:b9:75:9f:d1</code>;目的地址是<code>ff:ff:ff:ff:ff:ff</code>,这是一个广播地址,因此该数据包会广播至当前广播域中的所有设备</p>
+<p>用蓝色标记的即是ARP协议的所有内容.可以看出,它列出了发送方的MAC地址<code>a4:02:b9:75:9f:d1</code>,IP地址<code>192.168.10.5</code>,以及接收方的IP地址<code>192.168.10.1</code>.由于想要得到目标MAC地址,还是未知的,所以这里的MAC地址填写为<code>00:00:00:00:00:00</code></p>
+<h3 id="ARP响应数据包"><a href="#ARP响应数据包" class="headerlink" title="ARP响应数据包"></a>ARP响应数据包</h3><p><img src="ARP%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE%E5%8C%85.png" alt="ARP响应数据包"></p>
+<p>ARP响应的数据包与ARP请求很像,只有以下几点不同:</p>
+<ol>
+<li>数据包的操作码(opcode)现在是0x0002,用来表示这是一个响应而不是请求</li>
+<li>地址信息进行了颠倒,发送方的的MAC地址与IP地址现在变成了目的MAC地址与IP地址</li>
+<li>最重要的是,现在数据包中所有的信息都是可用的.响应的数据包不再广播,而是直接发送给<code>192.168.10.5</code>主机</li>
+</ol>
+<p>请求主机接收到ARP响应后,它便知道了指定IP主机所对应的MAC地址</p>
+<h3 id="无偿ARP"><a href="#无偿ARP" class="headerlink" title="无偿ARP"></a>无偿ARP</h3><p>无偿ARP又称免费ARP,毕竟英文名是<code>free ARP</code>…</p>
+<p>无偿ARP用于这种情况:一个主机的IP地址是可变的,当它更改了自己的IP地址后,同一广播域中所有设备缓存的IP地址与MAC地址映射就都不再有效了.为了防止造成通信错误,该主机将发送一个无偿ARP,强制所有接收到它的设备去用新的IP和MAC地址映射更新缓存</p>
+<p><img src="%E6%97%A0%E5%81%BFARP%E7%A4%BA%E4%BE%8B.png" alt="无偿ARP示例"></p>
+<p>有几种可能的情形会使用无偿ARP:</p>
+<ul>
+<li>主机的IP地址的更改</li>
+<li>操作系统启动完成后</li>
+<li>高可用集群IP切换</li>
+</ul>
+<p>如下是无偿ARP的数据包:</p>
+<p><img src="%E6%97%A0%E5%81%BFARP%E6%95%B0%E6%8D%AE%E5%8C%85.png" alt="无偿ARP数据包"></p>
+<p>可以看出,除了发送方的IP地址与接收方的IP地址一样以外,无偿ARP与普通的ARP请求没什么不同.事实上,无偿ARP就是ARP请求的特殊类型</p>
+<p>由于该ARP数据包是未经请求的,却导致客户更新ARP缓存,所以会称之为无偿</p>
+<h3 id="代理ARP"><a href="#代理ARP" class="headerlink" title="代理ARP"></a>代理ARP</h3><p>如果ARP请求是从一个网络的主机发往另一个网络上的主机,那么连接这两个网络的路由器就可以回答这个请求,这个过程就称为ARP代理</p>
+<p>我们之前讨论的都是同一广播域的主机通信,试想一下,如果是跨广播域(仍然在同一网段)间主机的通信会怎么样?请求主机直接将ARP请求包发送给跨广播域的另一端?由于广播域对二层流量的隔离,显然不可以</p>
+<p>此时,就轮到代理ARP发挥作用了.请求主机照常像广播域发送ARP请求,此时,如果位于该网段的二层设备接收到ARP请求,开启了代理ARP功能,并知道被请求主机属于它所连接的网络,那么该二层设备就会用自己的MAC地址代替请求主机的MAC地址来对被请求主机进行ARP请求,以及响应,最后向请求主机回复响应数据包</p>
+<p>在代理ARP的过程中,请求主机对此是无感知的,一切都由两个广播域间的二层设备完成</p>
+<h3 id="ARP缓存"><a href="#ARP缓存" class="headerlink" title="ARP缓存"></a>ARP缓存</h3><p>主机间自然不会每次发起IP请求时都发送一次ARP请求,那样太耗时间.实际上,每个主机都在内存中有一个缓冲区,专门用来存储IP地址与MAC地址的映射关系.这就是ARP缓存</p>
+<p>当ARP被询问一个IP地址对应的MAC地址时,往往先是在ARP缓存中查看是否已存在该IP地址的信息,若存在,则直接返回与之对应的MAC地址;若不存,才发送ARP请求向同一广播域查询</p>
+<p>动态条目与静态条目:</p>
+<ul>
+<li>动态条目随时间推移自动添加和删除,每个动态ARP缓存项都有都设置了TTL(生存时间),TTL为0时此项目就从表中删除</li>
+<li>静态ARP缓存条目是永久性的,可以使用TCP/IP工具手动添加和删除.静态ARP缓存条目用来禁止节点发送对常用的本地IPv4地址(例如路由器和服务器的IPv4地址)的ARP请求</li>
+</ul>
+<p>在Linux中,可以通过<code>ip neigh</code>或<code>arp</code>工具来查看或更改ARP缓存</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>ARP协议能够完成IP地址对MAC地址的映射,是整个TCP/IP协议栈中相当基础的协议,但正因为其基础性,它几乎是所有基于IP通信的协议的基石</p>
+<p>ARP协议往往被称为<code>局域网中的协议</code>,但这并不是说跨局域网就不需要ARP协议.固然同一个广播域中与其他设备通信需要ARP协议去获得MAC地址,跨局域网间设备的通信也需要ARP协议去获取网关设备的MAC地址,和网关设备通信呢</p>
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p>“Wireshark数据包分析实战(第二版)”</p>
+<p><a href="http://blog.51cto.com/xpleaf/1761856" target="_blank" rel="noopener">xpleaf:在实践中深入理解ARP协议</a></p>
+<p><a href="https://www.cnblogs.com/songwenlong/p/6103406.html" target="_blank" rel="noopener">songoo:TCP/IP协议——ARP详解</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E7%BD%91%E7%BB%9C/" rel="tag"><i class="fa fa-tag"></i> 网络</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/08/01/leetcode%E7%BB%83%E4%B9%A0%E8%BD%AC%E7%A7%BB/" rel="prev" title="leetcode练习转移">
+      <i class="fa fa-chevron-left"></i> leetcode练习转移
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/08/04/ip%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3/" rel="next" title="IP协议详解">
+      IP协议详解 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#ARP简介"><span class="nav-number">1.</span> <span class="nav-text">ARP简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ARP请求"><span class="nav-number">1.1.</span> <span class="nav-text">ARP请求</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ARP响应"><span class="nav-number">1.2.</span> <span class="nav-text">ARP响应</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ARP详解"><span class="nav-number">2.</span> <span class="nav-text">ARP详解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ARP头部"><span class="nav-number">2.1.</span> <span class="nav-text">ARP头部</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ARP请求数据包"><span class="nav-number">2.2.</span> <span class="nav-text">ARP请求数据包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ARP响应数据包"><span class="nav-number">2.3.</span> <span class="nav-text">ARP响应数据包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#无偿ARP"><span class="nav-number">2.4.</span> <span class="nav-text">无偿ARP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代理ARP"><span class="nav-number">2.5.</span> <span class="nav-text">代理ARP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ARP缓存"><span class="nav-number">2.6.</span> <span class="nav-text">ARP缓存</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档"><span class="nav-number">4.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

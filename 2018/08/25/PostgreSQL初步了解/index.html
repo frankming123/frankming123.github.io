@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="之前有看过数据库排行,除去Oracle,MySQL,MSSQL之外,排在第四的就是PostgreSQL,因此略微有点印象.现在上网不经意间看到PostgreSQL居然支持直接的RESTful接口,这么强?居然还是伯克利出品?于是我便打算看一看PostgreSQL相关的东西 PostgreSQL认识PostgreSQL是一款基于POSTGRES4.2版本的对象关系型数据库管理系统(RDBMS).PO">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PostgreSQL初步了解">
+<meta property="og:url" content="https://staight.github.io/2018/08/25/PostgreSQL%E5%88%9D%E6%AD%A5%E4%BA%86%E8%A7%A3/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="之前有看过数据库排行,除去Oracle,MySQL,MSSQL之外,排在第四的就是PostgreSQL,因此略微有点印象.现在上网不经意间看到PostgreSQL居然支持直接的RESTful接口,这么强?居然还是伯克利出品?于是我便打算看一看PostgreSQL相关的东西 PostgreSQL认识PostgreSQL是一款基于POSTGRES4.2版本的对象关系型数据库管理系统(RDBMS).PO">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-08-25T01:45:55.000Z">
+<meta property="article:modified_time" content="2019-10-02T17:49:50.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="PostgreSQL">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://staight.github.io/2018/08/25/PostgreSQL%E5%88%9D%E6%AD%A5%E4%BA%86%E8%A7%A3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>PostgreSQL初步了解 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2018/08/25/PostgreSQL%E5%88%9D%E6%AD%A5%E4%BA%86%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PostgreSQL初步了解
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-08-25 09:45:55" itemprop="dateCreated datePublished" datetime="2018-08-25T09:45:55+08:00">2018-08-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-03 01:49:50" itemprop="dateModified" datetime="2019-10-03T01:49:50+08:00">2019-10-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>之前有看过数据库排行,除去<code>Oracle</code>,<code>MySQL</code>,<code>MSSQL</code>之外,排在第四的就是<code>PostgreSQL</code>,因此略微有点印象.现在上网不经意间看到<code>PostgreSQL</code>居然支持直接的<code>RESTful</code>接口,这么强?居然还是伯克利出品?于是我便打算看一看<code>PostgreSQL</code>相关的东西</p>
+<h2 id="PostgreSQL认识"><a href="#PostgreSQL认识" class="headerlink" title="PostgreSQL认识"></a>PostgreSQL认识</h2><p><code>PostgreSQL</code>是一款基于<code>POSTGRES</code>4.2版本的对象关系型数据库管理系统(<code>RDBMS</code>).<code>POSTGRES</code>由加利福利亚伯克利分校计算机与科学部门所研发</p>
+<p><code>POSTGRES</code>项目于1986年由<code>Michael Stonebraker</code>教授所带领研发,当时受到许多研究部门和学校教育的青睐,1993年<code>POSTGRES</code>的使用者几乎翻了一倍,不过最后由于维护需要消耗大量时间,该项目终止于4.2版本</p>
+<p>1994年,<code>Andrew Yu</code>和<code>Jolly Chen</code>为<code>POSTGRES</code>添加了一个SQL解释器,并将其作为一个开源产品以新的名称<code>Postgres95</code>发布在互联网上.<code>Postgres95</code>完全使用<code>ANSI C</code>所编写,相较于<code>POSTGRES</code>大约快30-50%,缩减了25%的代码量,做了很多改进并修复了许多bug</p>
+<p>1996年,由于<code>Postgres95</code>这个名称很明显已经不再适用,这款软件被正式更名为<code>PostgreSQL</code>,并且初始版本号确立为6.0.目前为止,<code>PostgreSQL</code>已发展至11beta版本</p>
+<h2 id="PostgreSQL基础架构"><a href="#PostgreSQL基础架构" class="headerlink" title="PostgreSQL基础架构"></a>PostgreSQL基础架构</h2><ol>
+<li>C/S模型</li>
+<li>多进程结构:主进程,检查进程,文件写入进程,日志写入进程,删除标记进程,状态收集进程等等</li>
+</ol>
+<h2 id="创建数据库"><a href="#创建数据库" class="headerlink" title="创建数据库"></a>创建数据库</h2><p>PostgreSQL提供了createdb命令可以直接创建数据库,注意使用该命令的用户必须是PostgreSQL存在的角色,如postgres</p>
+<p>创建数据库:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ createdb DATABASE &#x2F;&#x2F;如果省略数据库名,则使用角色名作为数据库名</span><br></pre></td></tr></table></figure>
+
+<p>删除数据库:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ dropdb DATABASE</span><br></pre></td></tr></table></figure>
+
+<h2 id="连接至一个数据库"><a href="#连接至一个数据库" class="headerlink" title="连接至一个数据库"></a>连接至一个数据库</h2><p>有多种方式可以连接至PostgreSQL数据库:</p>
+<ol>
+<li>内置的PostgreSQL终端交互程序:psql</li>
+<li>各种前端图形化交互工具.如pgAdmin</li>
+<li>编程语言的PostgreSQL库.几乎每个编程语言都有</li>
+</ol>
+<p>由于psql是内置的客户端,因此示例基本使用psql</p>
+<h2 id="psql命令综合使用"><a href="#psql命令综合使用" class="headerlink" title="psql命令综合使用"></a>psql命令综合使用</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ psql DATABASE &#x2F;&#x2F;连接至一个数据库.与createdb命令类似,如果省略数据库名,则使用角色名作为数据库名</span><br></pre></td></tr></table></figure>
+
+<p>进入psql终端后,会出现这样的信息:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">psql (10.5 (Debian 10.5-1.pgdg90+1))</span><br><span class="line">Type &quot;help&quot; for help.</span><br><span class="line"></span><br><span class="line">postgres&#x3D;&gt;</span><br></pre></td></tr></table></figure>
+
+<p>最后一行也可能是这样的,这代表一个数据库的超级用户:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">postgres&#x3D;#</span><br></pre></td></tr></table></figure>
+
+<h3 id="psql杂项命令"><a href="#psql杂项命令" class="headerlink" title="psql杂项命令"></a>psql杂项命令</h3><p>查看PostgreSQL版本:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">postgres&#x3D;# select version();</span><br><span class="line"></span><br><span class="line">version</span><br><span class="line">----------------------------------------------------------------------------------------------------------------------------------</span><br><span class="line"> PostgreSQL 10.5 (Debian 10.5-1.pgdg90+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 6.3.0-18+deb9u1) 6.3.0 20170516, 64-bit</span><br><span class="line">(1 row)</span><br></pre></td></tr></table></figure>
+
+<p>查看当前日期:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">postgres&#x3D;# select current_date;</span><br><span class="line"> current_date</span><br><span class="line">--------------</span><br><span class="line"> 2018-08-20</span><br><span class="line">(1 row)</span><br></pre></td></tr></table></figure>
+
+<p>进行简单的算术:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">postgres&#x3D;# select 2+2;</span><br><span class="line"> ?column?</span><br><span class="line">----------</span><br><span class="line">        4</span><br><span class="line">(1 row)</span><br></pre></td></tr></table></figure>
+
+<p><code>psql</code>程序还有许多不是<code>SQL</code>语句的内置命令.这些命令以一个反斜线符号<code>\</code>作为开头</p>
+<p>例如,查看众多<code>PostgreSQL</code>的<code>SQL</code>命令的帮助:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">postgres&#x3D;# \h</span><br><span class="line">Available help:</span><br><span class="line">  ABORT                            CREATE FOREIGN TABLE             DROP SCHEMA</span><br><span class="line">  ALTER AGGREGATE                  CREATE FUNCTION                  DROP SEQUENCE</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>退出<code>psql</code>交互终端:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">postgres&#x3D;# \q</span><br></pre></td></tr></table></figure>
+
+<p>可以使用<code>\?</code>命令查看更多的内置命令的相关帮助</p>
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p><a href="https://www.postgresql.org/docs/10/static/index.html" target="_blank" rel="noopener">PostgreSQL官方文档</a></p>
+<p><a href="https://blog.csdn.net/leonzhouwei/article/details/8140885" target="_blank" rel="noopener">csdn,转:PostgreSQL 简介</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/PostgreSQL/" rel="tag"><i class="fa fa-tag"></i> PostgreSQL</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/08/18/%E8%AE%B0k8s%E7%9A%84%E4%B8%80%E6%AC%A1pv&pvc%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B/" rel="prev" title="记k8s的一次pv&pvc创建过程">
+      <i class="fa fa-chevron-left"></i> 记k8s的一次pv&pvc创建过程
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/08/25/Postgres-SQL%E8%AF%AD%E5%8F%A5/" rel="next" title="Postgres-SQL语句">
+      Postgres-SQL语句 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#PostgreSQL认识"><span class="nav-number">1.</span> <span class="nav-text">PostgreSQL认识</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PostgreSQL基础架构"><span class="nav-number">2.</span> <span class="nav-text">PostgreSQL基础架构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建数据库"><span class="nav-number">3.</span> <span class="nav-text">创建数据库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#连接至一个数据库"><span class="nav-number">4.</span> <span class="nav-text">连接至一个数据库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#psql命令综合使用"><span class="nav-number">5.</span> <span class="nav-text">psql命令综合使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#psql杂项命令"><span class="nav-number">5.1.</span> <span class="nav-text">psql杂项命令</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档"><span class="nav-number">6.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

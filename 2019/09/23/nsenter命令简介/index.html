@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="nsenter命令是一个可以在指定进程的命令空间下运行指定程序的命令。它位于util-linux包中。 用途一个最典型的用途就是进入容器的网络命令空间。相当多的容器为了轻量级，是不包含较为基础的命令的，比如说ip address，ping，telnet，ss，tcpdump等等命令，这就给调试容器网络带来相当大的困扰：只能通过docker inspect ContainerID命令获取到容器IP，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="nsenter命令简介">
+<meta property="og:url" content="https://staight.github.io/2019/09/23/nsenter%E5%91%BD%E4%BB%A4%E7%AE%80%E4%BB%8B/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="nsenter命令是一个可以在指定进程的命令空间下运行指定程序的命令。它位于util-linux包中。 用途一个最典型的用途就是进入容器的网络命令空间。相当多的容器为了轻量级，是不包含较为基础的命令的，比如说ip address，ping，telnet，ss，tcpdump等等命令，这就给调试容器网络带来相当大的困扰：只能通过docker inspect ContainerID命令获取到容器IP，">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-09-23T11:34:44.000Z">
+<meta property="article:modified_time" content="2019-10-02T17:49:50.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="容器">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://staight.github.io/2019/09/23/nsenter%E5%91%BD%E4%BB%A4%E7%AE%80%E4%BB%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>nsenter命令简介 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2019/09/23/nsenter%E5%91%BD%E4%BB%A4%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          nsenter命令简介
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-09-23 19:34:44" itemprop="dateCreated datePublished" datetime="2019-09-23T19:34:44+08:00">2019-09-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-03 01:49:50" itemprop="dateModified" datetime="2019-10-03T01:49:50+08:00">2019-10-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>nsenter命令是一个可以在指定进程的命令空间下运行指定程序的命令。它位于util-linux包中。</p>
+<h2 id="用途"><a href="#用途" class="headerlink" title="用途"></a>用途</h2><p>一个最典型的用途就是进入容器的网络命令空间。相当多的容器为了轻量级，是不包含较为基础的命令的，比如说<code>ip address</code>，<code>ping</code>，<code>telnet</code>，<code>ss</code>，<code>tcpdump</code>等等命令，这就给调试容器网络带来相当大的困扰：只能通过<code>docker inspect ContainerID</code>命令获取到容器IP，以及无法测试和其他网络的连通性。这时就可以使用nsenter命令仅进入该容器的网络命名空间，使用宿主机的命令调试容器网络。</p>
+<p>此外，nsenter也可以进入<code>mnt</code>, <code>uts</code>, <code>ipc</code>, <code>pid</code>, <code>user</code>命令空间，以及指定根目录和工作目录。</p>
+<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>首先看下nsenter命令的语法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">nsenter [options] [program [arguments]]</span><br><span class="line"></span><br><span class="line">options:</span><br><span class="line">-t, --target pid：指定被进入命名空间的目标进程的pid</span><br><span class="line">-m, --mount[&#x3D;file]：进入mount命令空间。如果指定了file，则进入file的命令空间</span><br><span class="line">-u, --uts[&#x3D;file]：进入uts命令空间。如果指定了file，则进入file的命令空间</span><br><span class="line">-i, --ipc[&#x3D;file]：进入ipc命令空间。如果指定了file，则进入file的命令空间</span><br><span class="line">-n, --net[&#x3D;file]：进入net命令空间。如果指定了file，则进入file的命令空间</span><br><span class="line">-p, --pid[&#x3D;file]：进入pid命令空间。如果指定了file，则进入file的命令空间</span><br><span class="line">-U, --user[&#x3D;file]：进入user命令空间。如果指定了file，则进入file的命令空间</span><br><span class="line">-G, --setgid gid：设置运行程序的gid</span><br><span class="line">-S, --setuid uid：设置运行程序的uid</span><br><span class="line">-r, --root[&#x3D;directory]：设置根目录</span><br><span class="line">-w, --wd[&#x3D;directory]：设置工作目录</span><br><span class="line"></span><br><span class="line">如果没有给出program，则默认执行$SHELL。</span><br></pre></td></tr></table></figure>
+
+<p>示例：</p>
+<p>运行一个nginx容器，查看该容器的pid：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@staight ~]# docker inspect -f &#123;&#123;.State.Pid&#125;&#125; nginx</span><br><span class="line">5645</span><br></pre></td></tr></table></figure>
+
+<p>然后，使用nsenter命令进入该容器的网络命令空间：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@staight ~]# nsenter -n -t5645</span><br><span class="line">[root@staight ~]# ip addr</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000</span><br><span class="line">    link&#x2F;loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">    inet 127.0.0.1&#x2F;8 scope host lo</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">18: eth0@if19: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP group default </span><br><span class="line">    link&#x2F;ether 02:42:ac:11:00:02 brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br><span class="line">    inet 172.17.0.2&#x2F;16 brd 172.17.255.255 scope global eth0</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br></pre></td></tr></table></figure>
+
+<p>进入成功~</p>
+<p>在Kubernetes中，在得到容器pid之前还需获取容器的ID，可以使用如下命令获取：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl get pod test -oyaml|grep containerID</span><br><span class="line">  - containerID: docker:&#x2F;&#x2F;cf0873782d587dbca6aa32f49605229da3748600a9926e85b36916141597ec85</span><br></pre></td></tr></table></figure>
+
+<p>或者更为精确地获取containerID：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl get pod test -o template --template&#x3D;&#39;&#123;&#123;range .status.containerStatuses&#125;&#125;&#123;&#123;.containerID&#125;&#125;&#123;&#123;end&#125;&#125;&#39;</span><br><span class="line">docker:&#x2F;&#x2F;cf0873782d587dbca6aa32f49605229da3748600a9926e85b36916141597ec85</span><br></pre></td></tr></table></figure>
+
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><h3 id="namespace"><a href="#namespace" class="headerlink" title="namespace"></a>namespace</h3><p>namespace是Linux中一些进程的属性的作用域，使用命名空间，可以隔离不同的进程。</p>
+<p>Linux在不断的添加命名空间，目前有：</p>
+<ul>
+<li>mount：挂载命名空间，使进程有一个独立的挂载文件系统，始于Linux 2.4.19</li>
+<li>ipc：ipc命名空间，使进程有一个独立的ipc，包括消息队列，共享内存和信号量，始于Linux 2.6.19</li>
+<li>uts：uts命名空间，使进程有一个独立的hostname和domainname，始于Linux 2.6.19</li>
+<li>net：network命令空间，使进程有一个独立的网络栈，始于Linux 2.6.24</li>
+<li>pid：pid命名空间，使进程有一个独立的pid空间，始于Linux 2.6.24</li>
+<li>user：user命名空间，是进程有一个独立的user空间，始于Linux 2.6.23，结束于Linux 3.8</li>
+<li>cgroup：cgroup命名空间，使进程有一个独立的cgroup控制组，始于Linux 4.6</li>
+</ul>
+<p>Linux的每个进程都具有命名空间，可以在/proc/PID/ns目录中看到命名空间的文件描述符。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@staight ns]# pwd</span><br><span class="line">&#x2F;proc&#x2F;1&#x2F;ns</span><br><span class="line">[root@staight ns]# ll</span><br><span class="line">total 0</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 23 19:53 ipc -&gt; ipc:[4026531839]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 23 19:53 mnt -&gt; mnt:[4026531840]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 23 19:53 net -&gt; net:[4026531956]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 23 19:53 pid -&gt; pid:[4026531836]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 23 19:53 user -&gt; user:[4026531837]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 23 19:53 uts -&gt; uts:[4026531838]</span><br></pre></td></tr></table></figure>
+
+<h3 id="clone"><a href="#clone" class="headerlink" title="clone"></a>clone</h3><p>clone是Linux的系统调用函数，用于创建一个新的进程。</p>
+<p>clone和fork比较类似，但更为精细化，比如说使用clone创建出的子进程可以共享父进程的虚拟地址空间，文件描述符表，信号处理表等等。不过这里要强调的是，clone函数还能为新进程指定命名空间。</p>
+<p>clone的语法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"> #define _GNU_SOURCE</span><br><span class="line">#include &lt;sched.h&gt;</span><br><span class="line"></span><br><span class="line">int clone(int (*fn)(void *), void *child_stack,</span><br><span class="line">        int flags, void *arg, ...</span><br><span class="line">        &#x2F;* pid_t *ptid, void *newtls, pid_t *ctid *&#x2F; );</span><br></pre></td></tr></table></figure>
+
+<p>其中flags即可指定命名空间，包括：</p>
+<ul>
+<li>CLONE_NEWCGROUP：cgroup</li>
+<li>CLONE_NEWIPC：ipc</li>
+<li>CLONE_NEWNET：net</li>
+<li>CLONE_NEWNS：mount</li>
+<li>CLONE_NEWPID：pid</li>
+<li>CLONE_NEWUSER：user</li>
+<li>CLONE_NEWUTS：uts</li>
+</ul>
+<p>使用示例：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pid = clone(childFunc, stackTop, CLONE_NEWUTS | SIGCHLD, argv[<span class="number">1</span>]);</span><br></pre></td></tr></table></figure>
+
+<h3 id="setns"><a href="#setns" class="headerlink" title="setns"></a>setns</h3><p>clone用于创建新的命令空间，而setns则用来让当前线程（单线程即进程）加入一个命名空间。</p>
+<p>语法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">#define _GNU_SOURCE             &#x2F;* See feature_test_macros(7) *&#x2F;</span><br><span class="line">#include &lt;sched.h&gt;</span><br><span class="line"></span><br><span class="line">int setns(int fd, int nstype);</span><br><span class="line"></span><br><span class="line">fd参数是一个指向一个命名空间的文件描述符，位于&#x2F;proc&#x2F;PID&#x2F;ns&#x2F;目录。</span><br><span class="line"></span><br><span class="line">nstype指定了允许进入的命名空间，一般可设置为0，表示允许进入所有命名空间。</span><br></pre></td></tr></table></figure>
+
+<p>因此，往往该函数的用法为：</p>
+<ol>
+<li>调用setns函数：指定该线程的命名空间。</li>
+<li>调用execvp函数：执行指定路径的程序，创建子进程并替换父进程。</li>
+</ol>
+<p>这样，就可以指定命名空间运行新的程序了。</p>
+<p>代码示例：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sched.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> errExit(msg)    do &#123; perror(msg); exit(EXIT_FAILURE); \</span></span><br><span class="line">                        &#125; <span class="keyword">while</span> (<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span></span><br><span class="line">main(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">int</span> fd;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (argc &lt; <span class="number">3</span>) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"%s /proc/PID/ns/FILE cmd args...\n"</span>, argv[<span class="number">0</span>]);</span><br><span class="line">        <span class="built_in">exit</span>(EXIT_FAILURE);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fd = <span class="built_in">open</span>(argv[<span class="number">1</span>], O_RDONLY); <span class="comment">/* Get file descriptor for namespace */</span></span><br><span class="line">    <span class="keyword">if</span> (fd == <span class="number">-1</span>)</span><br><span class="line">        errExit(<span class="string">"open"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (setns(fd, <span class="number">0</span>) == <span class="number">-1</span>)       <span class="comment">/* Join that namespace */</span></span><br><span class="line">        errExit(<span class="string">"setns"</span>);</span><br><span class="line"></span><br><span class="line">    execvp(argv[<span class="number">2</span>], &amp;argv[<span class="number">2</span>]);    <span class="comment">/* Execute a command in namespace */</span></span><br><span class="line">    errExit(<span class="string">"execvp"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用示例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;ns_exec &#x2F;proc&#x2F;3550&#x2F;ns&#x2F;uts &#x2F;bin&#x2F;bash</span><br></pre></td></tr></table></figure>
+
+<h3 id="nsenter"><a href="#nsenter" class="headerlink" title="nsenter"></a>nsenter</h3><p>那么，最后就是nsenter了，nsenter相当于在setns的示例程序之上做了一层封装，使我们无需指定命名空间的文件描述符，而是指定进程号即可。</p>
+<p>指定进程号PID以及需要进入的命名空间后，nsenter会帮我们找到对应的命名空间文件描述符<code>/proc/PID/ns/FD</code>，然后使用该命名空间运行新的程序。</p>
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p>容器内抓包定位网络问题：<a href="https://tencentcloudcontainerteam.github.io/tke-handbook/skill/capture-packets-in-container.html" target="_blank" rel="noopener">https://tencentcloudcontainerteam.github.io/tke-handbook/skill/capture-packets-in-container.html</a></p>
+<p>man-page：nsenter：<a href="http://www.man7.org/linux/man-pages/man1/nsenter.1.html#top_of_page" target="_blank" rel="noopener">http://www.man7.org/linux/man-pages/man1/nsenter.1.html#top_of_page</a></p>
+<p>man-page：clone：<a href="http://www.man7.org/linux/man-pages/man2/clone.2.html" target="_blank" rel="noopener">http://www.man7.org/linux/man-pages/man2/clone.2.html</a></p>
+<p>man-page：setns：<a href="http://www.man7.org/linux/man-pages/man2/setns.2.html" target="_blank" rel="noopener">http://www.man7.org/linux/man-pages/man2/setns.2.html</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E5%AE%B9%E5%99%A8/" rel="tag"><i class="fa fa-tag"></i> 容器</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/09/20/event%E6%97%A5%E5%BF%97%E6%9F%A5%E8%AF%A2%E5%B7%A5%E5%85%B7/" rel="prev" title="event日志查询工具">
+      <i class="fa fa-chevron-left"></i> event日志查询工具
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/09/24/ReplicaSet%E7%90%86%E8%A7%A3/" rel="next" title="ReplicaSet理解">
+      ReplicaSet理解 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#用途"><span class="nav-number">1.</span> <span class="nav-text">用途</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用"><span class="nav-number">2.</span> <span class="nav-text">使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原理"><span class="nav-number">3.</span> <span class="nav-text">原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#namespace"><span class="nav-number">3.1.</span> <span class="nav-text">namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#clone"><span class="nav-number">3.2.</span> <span class="nav-text">clone</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#setns"><span class="nav-number">3.3.</span> <span class="nav-text">setns</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#nsenter"><span class="nav-number">3.4.</span> <span class="nav-text">nsenter</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档"><span class="nav-number">4.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

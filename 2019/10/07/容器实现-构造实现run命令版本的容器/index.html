@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="经过namespace，cgroup和overlay2的简单认识后，该文章将实现一个run命令版本的容器，该程序能够识别命令行参数，运行namespace隔离的程序，并且能挂载&#x2F;proc目录。 实现效果先来看看实现效果吧。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="容器实现-构造实现run命令版本的容器">
+<meta property="og:url" content="https://staight.github.io/2019/10/07/%E5%AE%B9%E5%99%A8%E5%AE%9E%E7%8E%B0-%E6%9E%84%E9%80%A0%E5%AE%9E%E7%8E%B0run%E5%91%BD%E4%BB%A4%E7%89%88%E6%9C%AC%E7%9A%84%E5%AE%B9%E5%99%A8/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="经过namespace，cgroup和overlay2的简单认识后，该文章将实现一个run命令版本的容器，该程序能够识别命令行参数，运行namespace隔离的程序，并且能挂载&#x2F;proc目录。 实现效果先来看看实现效果吧。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-10-07T02:17:24.000Z">
+<meta property="article:modified_time" content="2019-10-07T05:26:16.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="容器">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://staight.github.io/2019/10/07/%E5%AE%B9%E5%99%A8%E5%AE%9E%E7%8E%B0-%E6%9E%84%E9%80%A0%E5%AE%9E%E7%8E%B0run%E5%91%BD%E4%BB%A4%E7%89%88%E6%9C%AC%E7%9A%84%E5%AE%B9%E5%99%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>容器实现-构造实现run命令版本的容器 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2019/10/07/%E5%AE%B9%E5%99%A8%E5%AE%9E%E7%8E%B0-%E6%9E%84%E9%80%A0%E5%AE%9E%E7%8E%B0run%E5%91%BD%E4%BB%A4%E7%89%88%E6%9C%AC%E7%9A%84%E5%AE%B9%E5%99%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          容器实现-构造实现run命令版本的容器
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2019-10-07 10:17:24 / 修改时间：13:26:16" itemprop="dateCreated datePublished" datetime="2019-10-07T10:17:24+08:00">2019-10-07</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>经过namespace，cgroup和overlay2的简单认识后，该文章将实现一个run命令版本的容器，该程序能够识别命令行参数，运行namespace隔离的程序，并且能挂载/proc目录。</p>
+<h2 id="实现效果"><a href="#实现效果" class="headerlink" title="实现效果"></a>实现效果</h2><p>先来看看实现效果吧。</p>
+<p>使用说明界面，主要使用了<code>github.com/urfave/cli</code>库，以提供方便的命令行参数操作。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">[root@staight chmdocker]# .&#x2F;chmdocker </span><br><span class="line">NAME:</span><br><span class="line">   chmdocker - chmdocker is a simple container runtime implementation.</span><br><span class="line">         Enjoy it, just for fun.</span><br><span class="line"></span><br><span class="line">USAGE:</span><br><span class="line">   chmdocker [global options] command [command options] [arguments...]</span><br><span class="line"></span><br><span class="line">VERSION:</span><br><span class="line">   0.0.1</span><br><span class="line"></span><br><span class="line">COMMANDS:</span><br><span class="line">   init     Init container process run user&#39;s process in container. Do not call it outside</span><br><span class="line">   run      Create a container with namespace and cgroups limit</span><br><span class="line">                mydocker run -ti [command]</span><br><span class="line">   help, h  Shows a list of commands or help for one command</span><br><span class="line"></span><br><span class="line">GLOBAL OPTIONS:</span><br><span class="line">   --help, -h     show help</span><br><span class="line">   --version, -v  print the version</span><br></pre></td></tr></table></figure>
+
+<p>run子命令的使用说明：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@staight chmdocker]# .&#x2F;chmdocker help run</span><br><span class="line">NAME:</span><br><span class="line">   chmdocker run - Create a container with namespace and cgroups limit</span><br><span class="line">      mydocker run -ti [command]</span><br><span class="line"></span><br><span class="line">USAGE:</span><br><span class="line">   chmdocker run [command options] [arguments...]</span><br><span class="line"></span><br><span class="line">OPTIONS:</span><br><span class="line">   --ti  enable tty</span><br></pre></td></tr></table></figure>
+
+<p>接下来run一个容器：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@staight chmdocker]# .&#x2F;chmdocker run --ti &#x2F;bin&#x2F;sh</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;msg&quot;:&quot;init come on&quot;,&quot;time&quot;:&quot;2019-10-07T11:39:57+08:00&quot;&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;msg&quot;:&quot;command &#x2F;bin&#x2F;sh&quot;,&quot;time&quot;:&quot;2019-10-07T11:39:57+08:00&quot;&#125;</span><br><span class="line">&#123;&quot;level&quot;:&quot;info&quot;,&quot;msg&quot;:&quot;command &#x2F;bin&#x2F;sh&quot;,&quot;time&quot;:&quot;2019-10-07T11:39:57+08:00&quot;&#125;</span><br><span class="line">sh-4.2# ip addr</span><br><span class="line">1: lo: &lt;LOOPBACK&gt; mtu 65536 qdisc noop state DOWN group default qlen 1000</span><br><span class="line">    link&#x2F;loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">sh-4.2# ps -elf</span><br><span class="line">F S UID        PID  PPID  C PRI  NI ADDR SZ WCHAN  STIME TTY          TIME CMD</span><br><span class="line">4 S root         1     0  0  80   0 - 28893 do_wai 11:51 pts&#x2F;1    00:00:00 &#x2F;bin&#x2F;sh</span><br><span class="line">0 R root         6     1  0  80   0 - 38841 -      11:52 pts&#x2F;1    00:00:00 ps -elf</span><br><span class="line">sh-4.2# ls &#x2F;proc</span><br><span class="line">1     buddyinfo  cmdline   crypto     dma          fb           interrupts  irq       keys       kpagecount  locks    misc     mtrr          partitions   scsi      softirqs  sys            timer_list   uptime       vmstat</span><br><span class="line">5     bus        consoles  devices    driver       filesystems  iomem       kallsyms  key-users  kpageflags  mdstat   modules  net           sched_debug  self      stat      sysrq-trigger  timer_stats  version      zoneinfo</span><br><span class="line">acpi  cgroups    cpuinfo   diskstats  execdomains  fs           ioports     kcore     kmsg       loadavg     meminfo  mounts   pagetypeinfo  schedstat    slabinfo  swaps     sysvipc        tty          vmallocinfo</span><br><span class="line">sh-4.2# exit</span><br><span class="line">exit</span><br></pre></td></tr></table></figure>
+
+<h2 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h2><p>先来看看程序入口：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	log <span class="string">"github.com/Sirupsen/logrus"</span></span><br><span class="line">	<span class="string">"github.com/urfave/cli"</span></span><br><span class="line">	<span class="string">"os"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> usage = <span class="string">`chmdocker is a simple container runtime implementation.</span></span><br><span class="line"><span class="string">			   Enjoy it, just for fun.`</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">// 初始化命令行参数的配置</span></span><br><span class="line">	app := cli.NewApp()</span><br><span class="line">	app.Name = <span class="string">"chmdocker"</span></span><br><span class="line">	app.Version = <span class="string">"0.0.1"</span></span><br><span class="line">	app.Usage = usage</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 配置子命令：init，run</span></span><br><span class="line">	app.Commands = []cli.Command&#123;</span><br><span class="line">		initCommand,</span><br><span class="line">		runCommand,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 运行app之前的操作，这里主要是配置log</span></span><br><span class="line">	app.Before = <span class="function"><span class="keyword">func</span><span class="params">(context *cli.Context)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">		<span class="comment">// Log as JSON instead of the default ASCII formatter.</span></span><br><span class="line">		log.SetFormatter(&amp;log.JSONFormatter&#123;&#125;)</span><br><span class="line"></span><br><span class="line">		log.SetOutput(os.Stdout)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 运行app</span></span><br><span class="line">	<span class="keyword">if</span> err := app.Run(os.Args); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该段代码负责初始化cli，并加载子命令<code>initCommand</code>和<code>runCommand</code>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> runCommand = cli.Command&#123;</span><br><span class="line">	Name: <span class="string">"run"</span>,</span><br><span class="line">	Usage: <span class="string">`Create a container with namespace and cgroups limit</span></span><br><span class="line"><span class="string">			mydocker run -ti [command]`</span>,</span><br><span class="line">	Flags: []cli.Flag&#123;</span><br><span class="line">		cli.BoolFlag&#123;</span><br><span class="line">			Name:  <span class="string">"ti"</span>,</span><br><span class="line">			Usage: <span class="string">"enable tty"</span>,</span><br><span class="line">		&#125;,</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="comment">// 输入参数后执行的操作</span></span><br><span class="line">	Action: <span class="function"><span class="keyword">func</span><span class="params">(context *cli.Context)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">		<span class="keyword">if</span> <span class="built_in">len</span>(context.Args()) &lt; <span class="number">1</span> &#123;</span><br><span class="line">			<span class="keyword">return</span> fmt.Errorf(<span class="string">"Missing container command"</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		cmd := context.Args().Get(<span class="number">0</span>)</span><br><span class="line">        tty := context.Bool(<span class="string">"ti"</span>)</span><br><span class="line">        <span class="comment">// 运行Run函数</span></span><br><span class="line">		Run(tty, cmd)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">	&#125;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> initCommand = cli.Command&#123;</span><br><span class="line">	Name:  <span class="string">"init"</span>,</span><br><span class="line">	Usage: <span class="string">"Init container process run user's process in container. Do not call it outside"</span>,</span><br><span class="line">	Action: <span class="function"><span class="keyword">func</span><span class="params">(context *cli.Context)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">		log.Infof(<span class="string">"init come on"</span>)</span><br><span class="line">		cmd := context.Args().Get(<span class="number">0</span>)</span><br><span class="line">		log.Infof(<span class="string">"command %s"</span>, cmd)</span><br><span class="line">		err := container.RunContainerInitProcess(cmd, <span class="literal">nil</span>)</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>runCommand</code>执行了<code>Run</code>函数：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"chmdocker/container"</span></span><br><span class="line">	log <span class="string">"github.com/Sirupsen/logrus"</span></span><br><span class="line">	<span class="string">"os"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Run</span><span class="params">(tty <span class="keyword">bool</span>, command <span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">    <span class="comment">// 配置新进程环境</span></span><br><span class="line">	parent := container.NewParentProcess(tty, command)</span><br><span class="line">	<span class="keyword">if</span> err := parent.Start(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Error(err)</span><br><span class="line">	&#125;</span><br><span class="line">	parent.Wait()</span><br><span class="line">	os.Exit(<span class="number">-1</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Run函数创建了一个子进程，<code>container</code>位于<code>chmdocker/container</code>文件夹中，负责初始化子进程参数：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> container</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"os"</span></span><br><span class="line">	<span class="string">"os/exec"</span></span><br><span class="line">	<span class="string">"syscall"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewParentProcess</span><span class="params">(tty <span class="keyword">bool</span>, command <span class="keyword">string</span>)</span> *<span class="title">exec</span>.<span class="title">Cmd</span></span> &#123;</span><br><span class="line">    args := []<span class="keyword">string</span>&#123;<span class="string">"init"</span>, command&#125;</span><br><span class="line">    <span class="comment">// /proc/self/是一个链接，指向进程自身，/proc/PID/</span></span><br><span class="line">	cmd := exec.Command(<span class="string">"/proc/self/exe"</span>, args...)</span><br><span class="line">	cmd.SysProcAttr = &amp;syscall.SysProcAttr&#123;</span><br><span class="line">		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS |</span><br><span class="line">			syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC,</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> tty &#123;</span><br><span class="line">		cmd.Stdin = os.Stdin</span><br><span class="line">		cmd.Stdout = os.Stdout</span><br><span class="line">		cmd.Stderr = os.Stderr</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> cmd</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，新创建的子进程位于独立的命名空间，是使用了init参数的程序自己<code>/proc/self/exe</code>。</p>
+<p>init子命令负责初始化容器内进程，比如说挂载<code>/proc</code>目录，以及以后使用cgroup均可在这里执行：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> container</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"github.com/Sirupsen/logrus"</span></span><br><span class="line">	<span class="string">"os"</span></span><br><span class="line">	<span class="string">"syscall"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">RunContainerInitProcess</span><span class="params">(command <span class="keyword">string</span>, args []<span class="keyword">string</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	logrus.Infof(<span class="string">"command %s"</span>, command)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 挂载rootfs，指定为独立的mount命名空间（默认为共享）</span></span><br><span class="line">	syscall.Mount(<span class="string">""</span>, <span class="string">"/"</span>, <span class="string">""</span>, syscall.MS_PRIVATE|syscall.MS_REC, <span class="string">""</span>)</span><br><span class="line">    defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV</span><br><span class="line">    <span class="comment">// 挂载/proc目录</span></span><br><span class="line">	syscall.Mount(<span class="string">"proc"</span>, <span class="string">"/proc"</span>, <span class="string">"proc"</span>, <span class="keyword">uintptr</span>(defaultMountFlags), <span class="string">""</span>)</span><br><span class="line">    argv := []<span class="keyword">string</span>&#123;command&#125;</span><br><span class="line">    <span class="comment">// 运行命令</span></span><br><span class="line">	<span class="keyword">if</span> err := syscall.Exec(command, argv, os.Environ()); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		logrus.Errorf(err.Error())</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>syscall.Exec()</code>函数负责创建子进程，并覆盖父进程的内存，堆栈空间等等信息。到这里，容器运行就成功了。</p>
+<p>大功告成~</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E5%AE%B9%E5%99%A8/" rel="tag"><i class="fa fa-tag"></i> 容器</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/10/06/%E5%89%91%E6%8C%87offer%E7%BC%96%E7%A8%8B%E9%A2%98%E6%80%BB%E7%BB%93/" rel="prev" title="剑指offer编程题总结">
+      <i class="fa fa-chevron-left"></i> 剑指offer编程题总结
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/10/08/Kubernetes-CRD%E7%AE%80%E4%BB%8B/" rel="next" title="Kubernetes CRD简介">
+      Kubernetes CRD简介 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#实现效果"><span class="nav-number">1.</span> <span class="nav-text">实现效果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代码分析"><span class="nav-number">2.</span> <span class="nav-text">代码分析</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

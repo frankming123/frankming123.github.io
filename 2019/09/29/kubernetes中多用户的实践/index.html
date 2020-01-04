@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="有时候需要多个用户共用一个集群，这种情况需要为其分配一个新的用户；为了集群的安全性还需要限制新用户的权限范围；多个用户难免会有资源竞争的情况，这时还需要限制其资源使用。 Kubernetes提供了一系列机制以满足多用户的使用，包括多用户，鉴权，命名空间，资源限制等等。 接下来将创建一个名为staight的用户，其拥有practice命名空间下的管理员权限，该命名空间有着CPU，内存，Pod数量等限">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubernetes中多用户的实践">
+<meta property="og:url" content="https://staight.github.io/2019/09/29/kubernetes%E4%B8%AD%E5%A4%9A%E7%94%A8%E6%88%B7%E7%9A%84%E5%AE%9E%E8%B7%B5/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="有时候需要多个用户共用一个集群，这种情况需要为其分配一个新的用户；为了集群的安全性还需要限制新用户的权限范围；多个用户难免会有资源竞争的情况，这时还需要限制其资源使用。 Kubernetes提供了一系列机制以满足多用户的使用，包括多用户，鉴权，命名空间，资源限制等等。 接下来将创建一个名为staight的用户，其拥有practice命名空间下的管理员权限，该命名空间有着CPU，内存，Pod数量等限">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-09-29T09:28:29.000Z">
+<meta property="article:modified_time" content="2019-10-02T17:49:50.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="容器">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://staight.github.io/2019/09/29/kubernetes%E4%B8%AD%E5%A4%9A%E7%94%A8%E6%88%B7%E7%9A%84%E5%AE%9E%E8%B7%B5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>kubernetes中多用户的实践 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2019/09/29/kubernetes%E4%B8%AD%E5%A4%9A%E7%94%A8%E6%88%B7%E7%9A%84%E5%AE%9E%E8%B7%B5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          kubernetes中多用户的实践
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-09-29 17:28:29" itemprop="dateCreated datePublished" datetime="2019-09-29T17:28:29+08:00">2019-09-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-03 01:49:50" itemprop="dateModified" datetime="2019-10-03T01:49:50+08:00">2019-10-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>有时候需要多个用户共用一个集群，这种情况需要为其分配一个新的用户；为了集群的安全性还需要限制新用户的权限范围；多个用户难免会有资源竞争的情况，这时还需要限制其资源使用。</p>
+<p>Kubernetes提供了一系列机制以满足多用户的使用，包括多用户，鉴权，命名空间，资源限制等等。</p>
+<p>接下来将创建一个名为staight的用户，其拥有practice命名空间下的管理员权限，该命名空间有着CPU，内存，Pod数量等限制。</p>
+<hr>
+<h2 id="创建用户"><a href="#创建用户" class="headerlink" title="创建用户"></a>创建用户</h2><p>Kubernetes中的用户创建大体包括静态创建和动态创建两类。其中静态创建需要apiserver启动时提供用户信息文件；动态创建则可以在apiserver启动后动态添加。</p>
+<p>动态创建的认证方式包括客户端证书认证和Service Account Token认证。如果能够登录至master的话建议使用客户端证书认证，这里尝试使用Service Account Token认证方式创建用户。</p>
+<p>Service Account隶属于命名空间之下，因此首先创建namespace/practice：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl create namespace practice</span><br><span class="line">namespace&#x2F;practice created</span><br></pre></td></tr></table></figure>
+
+<p>每创建一个命名空间，都会为其新建一个serviceaccount/default，不过这里新建serviceaccount/staight：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl create -n practice serviceaccount staight</span><br><span class="line">serviceaccount&#x2F;staight created</span><br></pre></td></tr></table></figure>
+
+<p>此时一个新的用户staight就已经创建好了，只不过在apiserver看来，他的用户名全称应为：<code>system:serviceaccount:practice:staight</code>。</p>
+<hr>
+<h2 id="切换用户"><a href="#切换用户" class="headerlink" title="切换用户"></a>切换用户</h2><p>创建用户后还需要切换至该用户，kubectl命令提供了<code>config</code>子命令以完成这一目的，该命令本质上是修改了位于<code>~/.kube/config</code>的kubeconfig文件，因此也可以为新用户创建一个新的Linux用户，为其放置kubeconfig文件，以实现针对不同Linux用户使用不同的Kubernetes用户。</p>
+<p>首先需要获取serviceaccount/staight用户的token：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl describe -n practice serviceaccount&#x2F;staight |grep Token</span><br><span class="line">Tokens:              staight-token-fhd4c</span><br><span class="line">[root@node k8s]# kubectl describe -n practice secret&#x2F;staight-token-fhd4c</span><br><span class="line">Name:         staight-token-fhd4c</span><br><span class="line">Namespace:    practice</span><br><span class="line">Type:  kubernetes.io&#x2F;service-account-token</span><br><span class="line"></span><br><span class="line">Data</span><br><span class="line">&#x3D;&#x3D;&#x3D;&#x3D;</span><br><span class="line">ca.crt:     1025 bytes</span><br><span class="line">namespace:  8 bytes</span><br><span class="line">token: &lt;TOKEN_CONTENT&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>&lt;TOKEN_CONTENT&gt;</code>就是serviceaccount/staight的token，设置kubeconfig的user，其名称为staight：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl config set-credentials staight --token&#x3D;&lt;TOKEN_CONTENT&gt;</span><br><span class="line">User &quot;staight&quot; set.</span><br></pre></td></tr></table></figure>
+
+<p>然后设置context，名称为practice-context，引用user为staight，cluster为默认的local，命名空间为practice（使用kubectl命令时如不指定namespace，则默认为practice）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl config set-context practice-context --user&#x3D;staight --cluster&#x3D;local --namespace&#x3D;practice</span><br><span class="line">Context &quot;practice-context&quot; created.</span><br></pre></td></tr></table></figure>
+
+<p>最后，切换至该context：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl config use-context practice-context</span><br><span class="line">Switched to context &quot;practice-context&quot;.</span><br></pre></td></tr></table></figure>
+
+<p>尝试获取pod列表，发现无权限，不过可以验证用户切换成功：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl get pod</span><br><span class="line">Error from server (Forbidden): pods is forbidden: User &quot;system:serviceaccount:practice:staight&quot; cannot list resource &quot;pods&quot; in API group &quot;&quot; in the namespace &quot;practice&quot;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="授予权限"><a href="#授予权限" class="headerlink" title="授予权限"></a>授予权限</h2><p>新创建的用户没有任何权限，因此需要为其授予权限，Kubernetes提供了多种权限授予方式，包括ABAC，Webhook，RBAC等等。</p>
+<p>RBAC为Kubernetes默认且推荐的权限授予方式，如果想要使用其他方式，需修改apiserver启动参数。这里使用RBAC模式。</p>
+<p>首先需要新建一个Role/ClusterRole资源并指定允许的权限，Kubernetes预设了clusterrole/admin，允许单个命名空间内除了资源配额和命名空间本身的写访问，很适合作为单个命名空间的管理员使用。因此这里不再新建role。</p>
+<p>如果想知道clusterrole/admin到底授予了什么样的权限，可以使用describe命令查看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl describe clusterrole admin</span><br><span class="line">Name:         admin</span><br><span class="line">Labels:       kubernetes.io&#x2F;bootstrapping&#x3D;rbac-defaults</span><br><span class="line">Annotations:  rbac.authorization.kubernetes.io&#x2F;autoupdate: true</span><br><span class="line">PolicyRule:</span><br><span class="line">  Resources                                       Non-Resource URLs  Resource Names  Verbs</span><br><span class="line">  ---------                                       -----------------  --------------  -----</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>接下来需要将clusterrole/admin绑定至serviceaccount/staight上：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl create rolebinding practice-admin --clusterrole&#x3D;admin --serviceaccount&#x3D;practice:staight --namespace&#x3D;practice</span><br><span class="line">rolebinding.rbac.authorization.k8s.io&#x2F;practice-admin created</span><br></pre></td></tr></table></figure>
+
+<p>如上，为staight用户授予了practice命名空间的admin角色，如果需要让该用户管理多个命名空间，更改<code>--namespace</code>参数再次创建即可。</p>
+<p>切换至staight用户，尝试获取practice命名空间下的Service Account：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl config use-context practice-context </span><br><span class="line">Switched to context &quot;practice-context&quot;.</span><br><span class="line">[root@node k8s]# kubectl get serviceaccounts </span><br><span class="line">NAME      SECRETS   AGE</span><br><span class="line">default   1         54m</span><br><span class="line">staight   1         49m</span><br></pre></td></tr></table></figure>
+
+<p>成功获取，授权成功。</p>
+<p>大部分情况下，完成新用户对单个命名空间的管理权限就已经可以了，不过如果需要对其资源使用做进一步的限制的话，还需修改命名空间的资源配额。</p>
+<hr>
+<h2 id="资源配额"><a href="#资源配额" class="headerlink" title="资源配额"></a>资源配额</h2><p>资源配额是一个用于限制一个命名空间下资源使用的机制，其包括如下两个对象：</p>
+<ul>
+<li>ResourceQuota：限制单个命名空间下的资源使用量。包括CPU，内存，存储，资源对象的个数等等。</li>
+<li>LimitRanger：为容器的Limits和Requests设置默认值和范围约束。</li>
+</ul>
+<h3 id="ResourceQuota"><a href="#ResourceQuota" class="headerlink" title="ResourceQuota"></a>ResourceQuota</h3><p>示例：为practice命名空间设置资源配额</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ResourceQuota</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">compute-resources</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">practice</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">hard:</span></span><br><span class="line">    <span class="attr">pods:</span> <span class="string">"2"</span></span><br><span class="line">    <span class="attr">requests.cpu:</span> <span class="string">"1"</span></span><br><span class="line">    <span class="attr">requests.memory:</span> <span class="string">1Gi</span></span><br><span class="line">    <span class="attr">limits.cpu:</span> <span class="string">"2"</span></span><br><span class="line">    <span class="attr">limits.memory:</span> <span class="string">2Gi</span></span><br></pre></td></tr></table></figure>
+
+<p>如上，对pod数量和使用的requests与limits值做了限制。可以使用<code>describe</code>命令查看目前的资源使用量和限制：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl describe resourcequotas </span><br><span class="line">Name:            compute-resources</span><br><span class="line">Namespace:       practice</span><br><span class="line">Resource         Used  Hard</span><br><span class="line">--------         ----  ----</span><br><span class="line">limits.cpu       0     2</span><br><span class="line">limits.memory    0     2Gi</span><br><span class="line">pods             0     2</span><br><span class="line">requests.cpu     0     1</span><br><span class="line">requests.memory  0     1Gi</span><br></pre></td></tr></table></figure>
+
+<p>尝试创建两个Pod，再次创建后报错：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl create -f pod.yml </span><br><span class="line">Error from server (Forbidden): error when creating &quot;pod.yml&quot;: pods &quot;alpine2&quot; is forbidden: exceeded quota: compute-resources, requested: pods&#x3D;1, used: pods&#x3D;2, limited: pods&#x3D;2</span><br></pre></td></tr></table></figure>
+
+<p>resourcequota对相当多的资源提供了限制，详细内容可参考文档：<a href="https://kubernetes.io/docs/concepts/policy/resource-quotas/#compute-resource-quota" target="_blank" rel="noopener">https://kubernetes.io/docs/concepts/policy/resource-quotas/#compute-resource-quota</a>。</p>
+<h3 id="LimitRanger"><a href="#LimitRanger" class="headerlink" title="LimitRanger"></a>LimitRanger</h3><p>LimitRanger用于为容器设置默认的requests和limits值，以及限制其范围。</p>
+<p>示例：限制practice命名空间下容器的requests值和limits值</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">LimitRange</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">memory-range</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">practice</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">limits:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">max:</span> <span class="comment"># 限制容器最大limits值</span></span><br><span class="line">      <span class="attr">memory:</span> <span class="string">20Mi</span></span><br><span class="line">    <span class="attr">min:</span> <span class="comment"># 限制容器最小limits值</span></span><br><span class="line">      <span class="attr">memory:</span> <span class="string">10Mi</span></span><br><span class="line">    <span class="attr">default:</span> <span class="comment"># 默认limits值</span></span><br><span class="line">      <span class="attr">memory:</span> <span class="string">10Mi</span></span><br><span class="line">    <span class="attr">defaultRequest:</span> <span class="comment"># 默认requests值</span></span><br><span class="line">      <span class="attr">memory:</span> <span class="string">10Mi</span></span><br><span class="line">    <span class="attr">type:</span> <span class="string">Container</span></span><br></pre></td></tr></table></figure>
+
+<p>如上，如创建Pod时未指定limits和requests值，则自动为其添加<code>requests.memory: 10Mi</code>，<code>limits.memory: 10Mi</code>；如创建时<code>limits.memory</code>值小于10Mi或大于20Mi，则会拒绝该请求：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node k8s]# kubectl create -f pod.yml </span><br><span class="line">Error from server (Forbidden): error when creating &quot;pod.yml&quot;: pods &quot;alpine2&quot; is forbidden: maximum memory usage per Container is 20Mi, but limit is 30Mi.</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>Kubernetes多用户的实践包括创建用户，授予权限，资源配额。本文章做了一个初步的演示，但在实际环境中，应当对用户认证方式的选择，授予什么样的权限，和资源的配额做更为周全的打算。</p>
+<hr>
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p>Resource Quotas：<a href="https://kubernetes.io/docs/concepts/policy/resource-quotas/" target="_blank" rel="noopener">https://kubernetes.io/docs/concepts/policy/resource-quotas/</a></p>
+<p>RBAC——基于角色的访问控制：<a href="https://jimmysong.io/kubernetes-handbook/concepts/rbac.html" target="_blank" rel="noopener">https://jimmysong.io/kubernetes-handbook/concepts/rbac.html</a></p>
+<p>Configure Memory and CPU Quotas for a Namespace：<a href="https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/quota-memory-cpu-namespace/" target="_blank" rel="noopener">https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/quota-memory-cpu-namespace/</a></p>
+<p>Configure Minimum and Maximum Memory Constraints for a Namespace：<a href="https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/memory-constraint-namespace/" target="_blank" rel="noopener">https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/memory-constraint-namespace/</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E5%AE%B9%E5%99%A8/" rel="tag"><i class="fa fa-tag"></i> 容器</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/09/29/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E5%87%86%E5%85%A5%E6%8E%A7%E5%88%B6/" rel="prev" title="kubernetes中的访问控制-准入控制">
+      <i class="fa fa-chevron-left"></i> kubernetes中的访问控制-准入控制
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/10/02/%E5%AE%B9%E5%99%A8%E5%AE%9E%E7%8E%B0-namespace/" rel="next" title="容器实现-namespace">
+      容器实现-namespace <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#创建用户"><span class="nav-number">1.</span> <span class="nav-text">创建用户</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#切换用户"><span class="nav-number">2.</span> <span class="nav-text">切换用户</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#授予权限"><span class="nav-number">3.</span> <span class="nav-text">授予权限</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#资源配额"><span class="nav-number">4.</span> <span class="nav-text">资源配额</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ResourceQuota"><span class="nav-number">4.1.</span> <span class="nav-text">ResourceQuota</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LimitRanger"><span class="nav-number">4.2.</span> <span class="nav-text">LimitRanger</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档"><span class="nav-number">6.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

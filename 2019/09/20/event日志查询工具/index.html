@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="尝试做了个日志查询平台，用来查询来自elasticsearch的k8s event日志。 简介 前端：vue+elementui，用来呈现event数据，并做了一定的分类，排序。 后端：flask，用来获取elasticsearch的数据，并提供接口供前端调用。 程序间数据交换格式均为json。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="event日志查询工具">
+<meta property="og:url" content="https://staight.github.io/2019/09/20/event%E6%97%A5%E5%BF%97%E6%9F%A5%E8%AF%A2%E5%B7%A5%E5%85%B7/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="尝试做了个日志查询平台，用来查询来自elasticsearch的k8s event日志。 简介 前端：vue+elementui，用来呈现event数据，并做了一定的分类，排序。 后端：flask，用来获取elasticsearch的数据，并提供接口供前端调用。 程序间数据交换格式均为json。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://staight.github.io/2019/09/20/event%E6%97%A5%E5%BF%97%E6%9F%A5%E8%AF%A2%E5%B7%A5%E5%85%B7/%E5%B7%A5%E5%85%B7%E6%9E%B6%E6%9E%84.png">
+<meta property="og:image" content="https://staight.github.io/2019/09/20/event%E6%97%A5%E5%BF%97%E6%9F%A5%E8%AF%A2%E5%B7%A5%E5%85%B7/%E6%88%90%E5%93%81-%E6%9F%A5%E8%AF%A2%E5%89%8D.png">
+<meta property="og:image" content="https://staight.github.io/2019/09/20/event%E6%97%A5%E5%BF%97%E6%9F%A5%E8%AF%A2%E5%B7%A5%E5%85%B7/%E6%88%90%E5%93%81-%E6%9F%A5%E8%AF%A2%E5%90%8E.png">
+<meta property="article:published_time" content="2019-09-20T05:24:26.000Z">
+<meta property="article:modified_time" content="2019-10-02T17:49:50.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="python">
+<meta property="article:tag" content="js">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://staight.github.io/2019/09/20/event%E6%97%A5%E5%BF%97%E6%9F%A5%E8%AF%A2%E5%B7%A5%E5%85%B7/%E5%B7%A5%E5%85%B7%E6%9E%B6%E6%9E%84.png">
+
+<link rel="canonical" href="https://staight.github.io/2019/09/20/event%E6%97%A5%E5%BF%97%E6%9F%A5%E8%AF%A2%E5%B7%A5%E5%85%B7/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>event日志查询工具 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2019/09/20/event%E6%97%A5%E5%BF%97%E6%9F%A5%E8%AF%A2%E5%B7%A5%E5%85%B7/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          event日志查询工具
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-09-20 13:24:26" itemprop="dateCreated datePublished" datetime="2019-09-20T13:24:26+08:00">2019-09-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-03 01:49:50" itemprop="dateModified" datetime="2019-10-03T01:49:50+08:00">2019-10-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>尝试做了个日志查询平台，用来查询来自elasticsearch的k8s event日志。</p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><ul>
+<li>前端：vue+elementui，用来呈现event数据，并做了一定的分类，排序。</li>
+<li>后端：flask，用来获取elasticsearch的数据，并提供接口供前端调用。</li>
+<li>程序间数据交换格式均为json。</li>
+</ul>
+<p>大体架构如下：</p>
+<p><img src="%E5%B7%A5%E5%85%B7%E6%9E%B6%E6%9E%84.png" alt="工具架构"></p>
+<p>文件列表：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">es</span><br><span class="line">|-- es_client</span><br><span class="line">|   |-- es_client.py</span><br><span class="line">|   &#96;-- __init__.py</span><br><span class="line">|</span><br><span class="line">|-- static</span><br><span class="line">|   |-- css</span><br><span class="line">|   |   &#96;-- main.css</span><br><span class="line">|   |-- index.html</span><br><span class="line">|   &#96;-- js</span><br><span class="line">&#96;-- web.py</span><br></pre></td></tr></table></figure>
+
+<h2 id="实现代码"><a href="#实现代码" class="headerlink" title="实现代码"></a>实现代码</h2><h3 id="es-client-py"><a href="#es-client-py" class="headerlink" title="es_client.py"></a>es_client.py</h3><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">import</span> logging</span><br><span class="line"></span><br><span class="line">ERR_NOT_JSON = &#123;<span class="string">'code'</span>: <span class="number">-1</span>,</span><br><span class="line">                <span class="string">'message'</span>: <span class="string">'type of returned elasticsearch data is not json'</span>&#125;</span><br><span class="line">ERR_NOT_200 = &#123;<span class="string">'code'</span>: <span class="number">-2</span>,</span><br><span class="line">               <span class="string">'message'</span>: <span class="string">'response code of elasticsearch is not 200'</span>&#125;</span><br><span class="line">logging.basicConfig(level=logging.WARNING)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">elasticsearch_client</span>:</span></span><br><span class="line">    url = <span class="string">''</span></span><br><span class="line">    headers = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, url=<span class="string">'127.0.0.1:9200'</span>, headers=&#123;&#125;)</span>:</span></span><br><span class="line">        self.url = url</span><br><span class="line">        self.headers = headers</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">health</span><span class="params">(self)</span>:</span></span><br><span class="line">        url = self.url+<span class="string">'/_cat/health?v'</span></span><br><span class="line">        r = requests.get(url, headers=self.headers)</span><br><span class="line">        <span class="keyword">if</span> r.status_code != <span class="number">200</span>:</span><br><span class="line">            logging.warning(r.status_code)</span><br><span class="line">            <span class="keyword">return</span> r.status_code</span><br><span class="line">        <span class="keyword">return</span> r.text</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">search</span><span class="params">(self, index=<span class="string">''</span>, q=<span class="string">''</span>, size=<span class="number">10</span>)</span>:</span></span><br><span class="line">        url = self.url+<span class="string">'/'</span>+index+<span class="string">'/_search/'</span></span><br><span class="line">        payload = &#123;<span class="string">'q'</span>: q, <span class="string">'size'</span>: size, <span class="string">'sort'</span>: <span class="string">'lastSeenTime:desc'</span>&#125;</span><br><span class="line"></span><br><span class="line">        logging.info(<span class="string">'url: '</span>+url)</span><br><span class="line">        logging.info(<span class="string">'payload: '</span>+str(payload))</span><br><span class="line">        r = requests.get(url, params=payload, headers=self.headers)</span><br><span class="line">        <span class="keyword">if</span> r.status_code != <span class="number">200</span>:</span><br><span class="line">            logging.warning(</span><br><span class="line">                <span class="string">'response code from elasticsearch is &#123;&#125;'</span>.format(r.status_code))</span><br><span class="line">            <span class="keyword">return</span> ERR_NOT_200</span><br><span class="line">        logging.info(<span class="string">'res: '</span>+r.text)</span><br><span class="line">        <span class="keyword">if</span> <span class="string">'application/json'</span> <span class="keyword">not</span> <span class="keyword">in</span> r.headers[<span class="string">'Content-Type'</span>]:</span><br><span class="line">            logging.warning(<span class="string">'data from elasticsearch not json'</span>)</span><br><span class="line">            <span class="keyword">return</span> ERR_NOT_JSON</span><br><span class="line">        <span class="keyword">return</span> r.json()</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">search_ccs</span><span class="params">(self, appId=<span class="string">''</span>, clusterId=<span class="string">''</span>, kind=<span class="string">''</span>, namespace=<span class="string">''</span>, message=<span class="string">''</span>, source=<span class="string">''</span>, reason=<span class="string">''</span>, fromtime=<span class="string">''</span>, totime=<span class="string">''</span>, size=<span class="number">10</span>)</span>:</span></span><br><span class="line">        strs = []</span><br><span class="line">        <span class="keyword">if</span> appId:</span><br><span class="line">            strs.append(<span class="string">"appId:"</span>+appId)</span><br><span class="line">        <span class="keyword">if</span> clusterId:</span><br><span class="line">            strs.append(<span class="string">"clusterId:"</span>+clusterId)</span><br><span class="line">        <span class="keyword">if</span> kind:</span><br><span class="line">            strs.append(<span class="string">"kind:"</span>+kind)</span><br><span class="line">        <span class="keyword">if</span> namespace:</span><br><span class="line">            strs.append(<span class="string">"namespace:"</span>+namespace)</span><br><span class="line">        <span class="keyword">if</span> message:</span><br><span class="line">            strs.append(<span class="string">"message:"</span>+message)</span><br><span class="line">        <span class="keyword">if</span> source:</span><br><span class="line">            strs.append(<span class="string">"source:"</span>+source)</span><br><span class="line">        <span class="keyword">if</span> reason:</span><br><span class="line">            strs.append(<span class="string">"reason"</span>+reason)</span><br><span class="line">        <span class="keyword">if</span> fromtime <span class="keyword">and</span> totime:</span><br><span class="line">            strs.append(</span><br><span class="line">                <span class="string">'lastSeenTime:&#123;&#123;"&#123;0&#125;" TO "&#123;1&#125;"&#125;&#125;'</span>.format(fromtime, totime))</span><br><span class="line">        q = <span class="string">' AND '</span>.join(strs)</span><br><span class="line">        <span class="keyword">return</span> self.search(index=<span class="string">'ccs_event_log_*'</span>, q=q, size=size)</span><br></pre></td></tr></table></figure>
+
+<p>es_client.py作为http客户端，向elasticsearch发送请求以获取event日志。http请求使用python的requests库即可，但主要难点在于构造请求包，通过日期，appId，clusterId等条件筛选结果。</p>
+<h3 id="web-py"><a href="#web-py" class="headerlink" title="web.py"></a>web.py</h3><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Flask</span><br><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> request</span><br><span class="line"><span class="keyword">from</span> flask_cors <span class="keyword">import</span> CORS</span><br><span class="line"><span class="keyword">from</span> es_client.es_client <span class="keyword">import</span> elasticsearch_client</span><br><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> jsonify</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line">CORS(app, supports_credentials=<span class="literal">True</span>)</span><br><span class="line">url = <span class="string">''</span></span><br><span class="line">headers = &#123;<span class="string">''</span>&#125;</span><br><span class="line"></span><br><span class="line">client = elasticsearch_client(url, headers)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route('/', methods=["GET"])</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> app.send_static_file(<span class="string">'index.html'</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route('/', methods=["POST"])</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">post</span><span class="params">()</span>:</span></span><br><span class="line">    data = request.json</span><br><span class="line">    print(<span class="string">'data:'</span>, data)</span><br><span class="line">    res = client.search_ccs(appId=data[<span class="string">'appid'</span>], clusterId=data[<span class="string">'clusterid'</span>], kind=data[<span class="string">'kind'</span>], namespace=data[<span class="string">'namespace'</span>],</span><br><span class="line">                            source=data[<span class="string">'source'</span>], fromtime=data[<span class="string">'fromtime'</span>], totime=data[<span class="string">'totime'</span>], reason=data[<span class="string">'reason'</span>], size=<span class="number">50</span>)</span><br><span class="line">    <span class="comment">#print('res:', res)</span></span><br><span class="line">    <span class="keyword">if</span> <span class="string">'code'</span> <span class="keyword">in</span> res:</span><br><span class="line">        <span class="keyword">return</span> jsonify(res), <span class="number">600</span></span><br><span class="line">    <span class="keyword">return</span> jsonify(res)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    app.run(port=<span class="number">8080</span>)</span><br></pre></td></tr></table></figure>
+
+<p>web.py是工具的主体，一方面提供前端界面，另一方面则负责提供API。</p>
+<p>由于使用ajax通信，flask无需再渲染模板，发送index.html静态文件即可。</p>
+<h3 id="index-html"><a href="#index-html" class="headerlink" title="index.html"></a>index.html</h3><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;!DOCTYPE <span class="meta-keyword">html</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">head</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">meta</span> <span class="attr">charset</span>=<span class="string">"UTF-8"</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- import CSS --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">link</span> <span class="attr">rel</span>=<span class="string">"stylesheet"</span> <span class="attr">href</span>=<span class="string">"https://unpkg.com/element-ui/lib/theme-chalk/index.css"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">link</span> <span class="attr">rel</span>=<span class="string">"stylesheet"</span> <span class="attr">href</span>=<span class="string">"static/css/main.css"</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">head</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"app"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">el-container</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">el-header</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">el-form</span> <span class="attr">:inline</span>=<span class="string">"true"</span> <span class="attr">:model</span>=<span class="string">"es"</span> <span class="attr">class</span>=<span class="string">"demo-form-inline"</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-form-item</span> <span class="attr">label</span>=<span class="string">"时间："</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">el-date-picker</span> <span class="attr">v-model</span>=<span class="string">"es.fromtotime"</span> <span class="attr">type</span>=<span class="string">"datetimerange"</span> <span class="attr">align</span>=<span class="string">"right"</span></span></span><br><span class="line"><span class="tag">                            <span class="attr">start-placeholder</span>=<span class="string">"开始日期"</span> <span class="attr">end-placeholder</span>=<span class="string">"结束日期"</span> <span class="attr">:default-time</span>=<span class="string">"['00:00:00', '23:59:59']"</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;/<span class="name">el-date-picker</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-form-item</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-form-item</span> <span class="attr">label</span>=<span class="string">"appid："</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">el-input</span> <span class="attr">v-model</span>=<span class="string">"es.appid"</span> <span class="attr">placeholder</span>=<span class="string">"appid"</span> <span class="attr">clearable</span>&gt;</span><span class="tag">&lt;/<span class="name">el-input</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-form-item</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-form-item</span> <span class="attr">label</span>=<span class="string">"clusterid："</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">el-input</span> <span class="attr">v-model</span>=<span class="string">"es.clusterid"</span> <span class="attr">placeholder</span>=<span class="string">"clusterid"</span> <span class="attr">clearable</span>&gt;</span><span class="tag">&lt;/<span class="name">el-input</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-form-item</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-form-item</span> <span class="attr">label</span>=<span class="string">"kind："</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">el-select</span> <span class="attr">v-model</span>=<span class="string">"es.kind"</span> <span class="attr">filterable</span> <span class="attr">placeholder</span>=<span class="string">"请选择"</span>&gt;</span></span><br><span class="line">                            <span class="tag">&lt;<span class="name">el-option</span> <span class="attr">v-for</span>=<span class="string">"kind in kinds"</span> <span class="attr">:key</span>=<span class="string">"kind"</span> <span class="attr">:label</span>=<span class="string">"kind"</span> <span class="attr">:value</span>=<span class="string">"kind"</span>&gt;</span></span><br><span class="line">                            <span class="tag">&lt;/<span class="name">el-option</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;/<span class="name">el-select</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-form-item</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-form-item</span> <span class="attr">label</span>=<span class="string">"namespace："</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">el-input</span> <span class="attr">v-model</span>=<span class="string">"es.namespace"</span> <span class="attr">placeholder</span>=<span class="string">"namespace"</span> <span class="attr">clearable</span>&gt;</span><span class="tag">&lt;/<span class="name">el-input</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-form-item</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-form-item</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="name">el-button</span> <span class="attr">type</span>=<span class="string">"primary"</span> @<span class="attr">click</span>=<span class="string">"onSubmit"</span>&gt;</span>查询<span class="tag">&lt;/<span class="name">el-button</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-form-item</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="name">el-form</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">el-header</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">el-main</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">el-table</span> <span class="attr">:data</span>=<span class="string">"tableData"</span> <span class="attr">:default-sort</span>=<span class="string">"&#123;prop: 'lastSeenTime', order: 'descending'&#125;"</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-table-column</span> <span class="attr">prop</span>=<span class="string">"lastSeenTime"</span> <span class="attr">label</span>=<span class="string">"时间"</span> <span class="attr">width</span>=<span class="string">'200'</span> <span class="attr">sortable</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-table-column</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-table-column</span> <span class="attr">prop</span>=<span class="string">"appId"</span> <span class="attr">label</span>=<span class="string">"appid"</span> <span class="attr">width</span>=<span class="string">'100'</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-table-column</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-table-column</span> <span class="attr">prop</span>=<span class="string">"clusterId"</span> <span class="attr">label</span>=<span class="string">"集群id"</span> <span class="attr">width</span>=<span class="string">'100'</span> <span class="attr">sortable</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-table-column</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-table-column</span> <span class="attr">prop</span>=<span class="string">"reason"</span> <span class="attr">label</span>=<span class="string">"reason"</span> <span class="attr">width</span>=<span class="string">'100'</span> <span class="attr">sortable</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-table-column</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-table-column</span> <span class="attr">prop</span>=<span class="string">"source"</span> <span class="attr">label</span>=<span class="string">"source"</span> <span class="attr">width</span>=<span class="string">'200'</span> <span class="attr">sortable</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-table-column</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-table-column</span> <span class="attr">prop</span>=<span class="string">"kind"</span> <span class="attr">label</span>=<span class="string">"kind"</span> <span class="attr">width</span>=<span class="string">'100'</span> <span class="attr">sortable</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-table-column</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-table-column</span> <span class="attr">prop</span>=<span class="string">"namespace"</span> <span class="attr">label</span>=<span class="string">"namespace"</span> <span class="attr">width</span>=<span class="string">'100'</span> <span class="attr">sortable</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-table-column</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-table-column</span> <span class="attr">prop</span>=<span class="string">"eventType"</span> <span class="attr">label</span>=<span class="string">"eventType"</span> <span class="attr">width</span>=<span class="string">'100'</span> <span class="attr">sortable</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-table-column</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">el-table-column</span> <span class="attr">prop</span>=<span class="string">"message"</span> <span class="attr">label</span>=<span class="string">"message"</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="name">el-table-column</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="name">el-table</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">el-main</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">el-footer</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">p</span>&gt;</span>共&#123;&#123; resCount &#125;&#125;项<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">el-footer</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">el-container</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">body</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- import Vue before Element --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">"https://unpkg.com/vue/dist/vue.js"</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- import JavaScript --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">"https://unpkg.com/element-ui/lib/index.js"</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">"https://unpkg.com/axios/dist/axios.min.js"</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="actionscript">    <span class="function"><span class="keyword">function</span> <span class="title">pad</span><span class="params">(number)</span> </span>&#123;</span></span><br><span class="line">        if (number &lt; 10) &#123;</span><br><span class="line"><span class="actionscript">            <span class="keyword">return</span> <span class="string">'0'</span> + number;</span></span><br><span class="line">        &#125;</span><br><span class="line"><span class="actionscript">        <span class="keyword">return</span> number;</span></span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line"><span class="javascript">    <span class="built_in">Date</span>.prototype.toISOString = <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span></span><br><span class="line"><span class="actionscript">        <span class="keyword">return</span> <span class="keyword">this</span>.getFullYear() +</span></span><br><span class="line"><span class="actionscript">            <span class="string">'-'</span> + pad(<span class="keyword">this</span>.getMonth() + <span class="number">1</span>) +</span></span><br><span class="line"><span class="actionscript">            <span class="string">'-'</span> + pad(<span class="keyword">this</span>.getDate()) +</span></span><br><span class="line"><span class="actionscript">            <span class="string">'T'</span> + pad(<span class="keyword">this</span>.getHours()) +</span></span><br><span class="line"><span class="actionscript">            <span class="string">':'</span> + pad(<span class="keyword">this</span>.getMinutes()) +</span></span><br><span class="line"><span class="actionscript">            <span class="string">':'</span> + pad(<span class="keyword">this</span>.getSeconds()) +</span></span><br><span class="line"><span class="actionscript">            <span class="string">'.'</span> + (<span class="keyword">this</span>.getMilliseconds() / <span class="number">1000</span>).toFixed(<span class="number">3</span>).slice(<span class="number">2</span>, <span class="number">5</span>) +</span></span><br><span class="line"><span class="actionscript">            <span class="string">'+08:00'</span>;</span></span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line"><span class="actionscript">    <span class="function"><span class="keyword">function</span> <span class="title">before1Hour</span><span class="params">(date)</span> </span>&#123;</span></span><br><span class="line"><span class="javascript">        res = <span class="keyword">new</span> <span class="built_in">Date</span>();</span></span><br><span class="line"><span class="javascript">        res.setTime(<span class="built_in">Date</span>.parse(date) - <span class="number">3600000</span>);</span></span><br><span class="line"><span class="actionscript">        <span class="keyword">return</span> res;</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="actionscript">    <span class="keyword">var</span> app = <span class="keyword">new</span> Vue(&#123;</span></span><br><span class="line"><span class="actionscript">        el: <span class="string">'#app'</span>,</span></span><br><span class="line">        data: &#123;</span><br><span class="line">            es: &#123;</span><br><span class="line"><span class="actionscript">                appid: <span class="string">''</span>,</span></span><br><span class="line"><span class="actionscript">                clusterid: <span class="string">''</span>,</span></span><br><span class="line"><span class="actionscript">                kind: <span class="string">''</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="keyword">namespace</span>: <span class="string">''</span>,</span></span><br><span class="line"><span class="actionscript">                message: <span class="string">''</span>,</span></span><br><span class="line"><span class="actionscript">                source: <span class="string">''</span>,</span></span><br><span class="line"><span class="actionscript">                reason: <span class="string">''</span>,</span></span><br><span class="line"><span class="javascript">                fromtotime: [before1Hour(<span class="keyword">new</span> <span class="built_in">Date</span>()), <span class="keyword">new</span> <span class="built_in">Date</span>()],</span></span><br><span class="line">            &#125;,</span><br><span class="line">            kinds: [</span><br><span class="line"><span class="actionscript">                <span class="string">'Deployment'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">'StatefulSet'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">'DaemonSet'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">'CronJob'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">'Job'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">'Pod'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">'Service'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">'Ingress'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">'ReplicaSet'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">'Master'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">'Node'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">'HorizontalPodAutoscaler'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">'PersistentVolumeClaim'</span>,</span></span><br><span class="line"><span class="actionscript">                <span class="string">''</span>,</span></span><br><span class="line">            ],</span><br><span class="line">            tableData: [</span><br><span class="line">            ],</span><br><span class="line">            resCount: 0,</span><br><span class="line"><span class="actionscript">            error: <span class="string">''</span>,</span></span><br><span class="line">        &#125;,</span><br><span class="line">        methods: &#123;</span><br><span class="line">            onSubmit() &#123;</span><br><span class="line"><span class="actionscript">                axios.post(<span class="string">'http://127.0.0.1:8080'</span>, &#123;</span></span><br><span class="line"><span class="actionscript">                    <span class="string">'appid'</span>: <span class="keyword">this</span>.es.appid,</span></span><br><span class="line"><span class="actionscript">                    <span class="string">'clusterid'</span>: <span class="keyword">this</span>.es.clusterid,</span></span><br><span class="line"><span class="actionscript">                    <span class="string">'kind'</span>: <span class="keyword">this</span>.es.kind,</span></span><br><span class="line"><span class="actionscript">                    <span class="string">'namespace'</span>: <span class="keyword">this</span>.es.namespace,</span></span><br><span class="line"><span class="actionscript">                    <span class="string">'source'</span>: <span class="keyword">this</span>.es.source,</span></span><br><span class="line"><span class="actionscript">                    <span class="string">'reason'</span>: <span class="keyword">this</span>.es.reason,</span></span><br><span class="line"><span class="actionscript">                    <span class="string">'message'</span>: <span class="keyword">this</span>.message,</span></span><br><span class="line"><span class="actionscript">                    <span class="string">'fromtime'</span>: <span class="keyword">this</span>.es.fromtotime[<span class="number">0</span>].toISOString(),</span></span><br><span class="line"><span class="actionscript">                    <span class="string">'totime'</span>: <span class="keyword">this</span>.es.fromtotime[<span class="number">1</span>].toISOString(),</span></span><br><span class="line"><span class="javascript">                &#125;).then(<span class="function"><span class="params">res</span> =&gt;</span> &#123;</span></span><br><span class="line"><span class="actionscript">                    <span class="keyword">var</span> tmp = res.data.hits.hits;</span></span><br><span class="line"><span class="actionscript">                    <span class="keyword">this</span>.resCount = tmp.length;</span></span><br><span class="line"><span class="actionscript">                    <span class="keyword">this</span>.tableData = [];</span></span><br><span class="line"><span class="actionscript">                    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; tmp.length; i++) &#123;</span></span><br><span class="line"><span class="actionscript">                        tmp[i]._source.lastSeenTime = tmp[i]._source.lastSeenTime.substr(<span class="number">0</span>, tmp[i]._source.lastSeenTime.indexOf(<span class="string">'.'</span>));</span></span><br><span class="line"><span class="actionscript">                        <span class="keyword">this</span>.tableData.push(tmp[i]._source);</span></span><br><span class="line">                    &#125;</span><br><span class="line"><span class="actionscript">                    <span class="keyword">return</span> <span class="keyword">this</span>.tableData;</span></span><br><span class="line"><span class="javascript">                &#125;).catch(<span class="function"><span class="params">err</span> =&gt;</span> &#123;</span></span><br><span class="line"><span class="actionscript">                    <span class="comment">//this.error = err;</span></span></span><br><span class="line"><span class="actionscript">                    <span class="keyword">this</span>.$notify.error(&#123;</span></span><br><span class="line">                        title: err.response.status,</span><br><span class="line">                        message: err.response.data,</span><br><span class="line">                    &#125;);</span><br><span class="line"><span class="javascript">                    <span class="built_in">console</span>.error(err.response.data);</span></span><br><span class="line"><span class="actionscript">                    <span class="keyword">return</span> err;</span></span><br><span class="line">                &#125;)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>index.html提供了前端界面，主要为请求的表单以及作为返回结果的表格。</p>
+<h2 id="成品"><a href="#成品" class="headerlink" title="成品"></a>成品</h2><p>查询前：</p>
+<p><img src="%E6%88%90%E5%93%81-%E6%9F%A5%E8%AF%A2%E5%89%8D.png" alt="成品-查询前"></p>
+<p>查询后：</p>
+<p><img src="%E6%88%90%E5%93%81-%E6%9F%A5%E8%AF%A2%E5%90%8E.png" alt="成品-查询后"></p>
+<p>可对查询结果进行排序，筛选。Ingress一直报warning是因为我之前的一次测试，给它传了一个过期的证书…</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>这个event日志查询工具是为了更加方便的查询elasticsearch中的数据，另外可搭建kibana查询，其更为通用些，却略为复杂。</p>
+<p>该工具也锻炼了我的web应用编写能力，在写程序时小问题不断，比如说es查询语法错误、时间格式不符、ajax变量作用域、html样式不好看等等，最终一一解决。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/python/" rel="tag"><i class="fa fa-tag"></i> python</a>
+              <a href="/tags/js/" rel="tag"><i class="fa fa-tag"></i> js</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/09/18/configmap%E7%83%AD%E6%9B%B4%E6%96%B0/" rel="prev" title="configmap热更新">
+      <i class="fa fa-chevron-left"></i> configmap热更新
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/09/23/nsenter%E5%91%BD%E4%BB%A4%E7%AE%80%E4%BB%8B/" rel="next" title="nsenter命令简介">
+      nsenter命令简介 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#简介"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实现代码"><span class="nav-number">2.</span> <span class="nav-text">实现代码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#es-client-py"><span class="nav-number">2.1.</span> <span class="nav-text">es_client.py</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#web-py"><span class="nav-number">2.2.</span> <span class="nav-text">web.py</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#index-html"><span class="nav-number">2.3.</span> <span class="nav-text">index.html</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#成品"><span class="nav-number">3.</span> <span class="nav-text">成品</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

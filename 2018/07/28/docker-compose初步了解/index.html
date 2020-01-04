@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="Compose是一个用来定义和运行多容器Docker应用程序的工具.通过Compose,我们使用一个YAML文件来配置应用程序的服务,然后,仅仅一个简单的命令就可以创建和开启所有配置文件中定义的服务 使用Compose基本上需要3个步骤:  使用Dockerfile定义服务的环境.这样它可以运行在任何地方 使用docker-compose.yml定义组成app的服务.这样它们可以在一个孤立的环境一">
+<meta property="og:type" content="article">
+<meta property="og:title" content="docker-compose初步了解">
+<meta property="og:url" content="https://staight.github.io/2018/07/28/docker-compose%E5%88%9D%E6%AD%A5%E4%BA%86%E8%A7%A3/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="Compose是一个用来定义和运行多容器Docker应用程序的工具.通过Compose,我们使用一个YAML文件来配置应用程序的服务,然后,仅仅一个简单的命令就可以创建和开启所有配置文件中定义的服务 使用Compose基本上需要3个步骤:  使用Dockerfile定义服务的环境.这样它可以运行在任何地方 使用docker-compose.yml定义组成app的服务.这样它们可以在一个孤立的环境一">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://staight.github.io/2018/07/28/docker-compose%E5%88%9D%E6%AD%A5%E4%BA%86%E8%A7%A3/compose_run_wordpress.png">
+<meta property="og:image" content="https://staight.github.io/2018/07/28/docker-compose%E5%88%9D%E6%AD%A5%E4%BA%86%E8%A7%A3/compose_wordpress_success.png">
+<meta property="article:published_time" content="2018-07-28T08:30:10.000Z">
+<meta property="article:modified_time" content="2019-10-02T17:49:50.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="运维">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://staight.github.io/2018/07/28/docker-compose%E5%88%9D%E6%AD%A5%E4%BA%86%E8%A7%A3/compose_run_wordpress.png">
+
+<link rel="canonical" href="https://staight.github.io/2018/07/28/docker-compose%E5%88%9D%E6%AD%A5%E4%BA%86%E8%A7%A3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>docker-compose初步了解 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2018/07/28/docker-compose%E5%88%9D%E6%AD%A5%E4%BA%86%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          docker-compose初步了解
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-07-28 16:30:10" itemprop="dateCreated datePublished" datetime="2018-07-28T16:30:10+08:00">2018-07-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-03 01:49:50" itemprop="dateModified" datetime="2019-10-03T01:49:50+08:00">2019-10-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Compose是一个用来定义和运行多容器Docker应用程序的工具.通过Compose,我们使用一个YAML文件来配置应用程序的服务,然后,仅仅一个简单的命令就可以创建和开启所有配置文件中定义的服务</p>
+<p>使用Compose基本上需要3个步骤:</p>
+<ol>
+<li>使用<code>Dockerfile</code>定义服务的环境.这样它可以运行在任何地方</li>
+<li>使用<code>docker-compose.yml</code>定义组成app的服务.这样它们可以在一个孤立的环境一起运行</li>
+<li>运行<code>docker-compose up</code>,Compose将会开启并运行整个app</li>
+</ol>
+<p>Compose可以管理一个应用程序的整个生命周期:</p>
+<ol>
+<li>开启,停止,重创建服务</li>
+<li>查看正在运行服务的状态</li>
+<li>导出正在运行服务所输出的日志</li>
+<li>在一个服务上运行一次性命令</li>
+</ol>
+<h2 id="Docker-Compose安装"><a href="#Docker-Compose安装" class="headerlink" title="Docker Compose安装"></a>Docker Compose安装</h2><p>在Linux上,可以在github上下载Docker Compose的二进制文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">]# curl -L https:&#x2F;&#x2F;github.com&#x2F;docker&#x2F;compose&#x2F;releases&#x2F;download&#x2F;1.22.0&#x2F;docker-compose-$(uname -s)-$(uname -m) -o &#x2F;usr&#x2F;local&#x2F;bin&#x2F;docker-compose</span><br><span class="line"></span><br><span class="line">]# chmod +x &#x2F;usr&#x2F;local&#x2F;bin&#x2F;docker-compose</span><br><span class="line"></span><br><span class="line">]# docker-compose version</span><br></pre></td></tr></table></figure>
+
+<h2 id="开始使用Docker-Compose"><a href="#开始使用Docker-Compose" class="headerlink" title="开始使用Docker Compose"></a>开始使用Docker Compose</h2><p>那么,让我们用wordpress来做个示范吧</p>
+<h3 id="第一步-定义应用程序的环境"><a href="#第一步-定义应用程序的环境" class="headerlink" title="第一步,定义应用程序的环境"></a>第一步,定义应用程序的环境</h3><p>使用Compose,首先需要定义应用程序的依赖环境.想想看该应用程序需要哪些文件,例如flask应用程序需要写flask启动代码;redis应用程序可能需要编写配置文件等等</p>
+<p>这里wordpress由于镜像都做好了,因此并不需要什么环境.不过创建项目文件夹还是需要的</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">]# mkdir wpcompose</span><br><span class="line"></span><br><span class="line">]# cd wpcompose</span><br></pre></td></tr></table></figure>
+
+<p>要注意的是,如果有应用程序有多个服务需要依赖环境,最好为需要的服务都创建一个子文件夹,在其子文件夹中构建镜像</p>
+<h3 id="第二步-创建Dockerfile"><a href="#第二步-创建Dockerfile" class="headerlink" title="第二步,创建Dockerfile"></a>第二步,创建Dockerfile</h3><p>在这一步,我们需要为需要自定义镜像的服务构建Dockerfile,这应该在每个服务的子文件夹中进行</p>
+<p>wordpress所需要的镜像都已经收录在官方镜像中了,同不需要自己构建</p>
+<h3 id="第三步-在Compose文件中定义服务"><a href="#第三步-在Compose文件中定义服务" class="headerlink" title="第三步,在Compose文件中定义服务"></a>第三步,在Compose文件中定义服务</h3><p>在项目文件夹中创建一个名为<code>docker-compose.yml</code>的文件,其定义各个服务</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">'3'</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">wordpress:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">wordpress</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="number">8080</span><span class="string">:80</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">WORDPRESS_DB_PASSWORD:</span> <span class="string">example</span></span><br><span class="line">  <span class="attr">mysql:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">mysql:5.7</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">MYSQL_ROOT_PASSWORD:</span> <span class="string">example</span></span><br></pre></td></tr></table></figure>
+
+<p>该compose文件定义了两个服务:wordpress和mysql.其中wordpress服务:</p>
+<ul>
+<li>使用名为wordpress的镜像</li>
+<li>重启策略设为一旦停止运行,立即重启</li>
+<li>端口映射为主机端8080端口:容器80端口</li>
+<li>设置环境变量<code>WORDPRESS_DB_PASSWORD</code>的值为<code>example</code>.其相当于<code>docker run -e VARIABLE=VALUE ...</code></li>
+</ul>
+<h3 id="第四步-使用Compose命令构建并运行应用程序"><a href="#第四步-使用Compose命令构建并运行应用程序" class="headerlink" title="第四步,使用Compose命令构建并运行应用程序"></a>第四步,使用Compose命令构建并运行应用程序</h3><ol>
+<li>在项目文件夹,使用<code>docker-compose up</code>命令开启应用程序</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"># root @ study in &#x2F;home&#x2F;staight&#x2F;composetest [17:36:14] </span><br><span class="line">$ docker-compose up</span><br><span class="line">Creating network &quot;composetest_default&quot; with the default driver</span><br><span class="line">Pulling mysql (mysql:5.7)...</span><br><span class="line">5.7: Pulling from library&#x2F;mysql</span><br><span class="line">be8881be8156: Already exists</span><br><span class="line">c3995dabd1d7: Pull complete</span><br><span class="line">9931fdda3586: Pull complete</span><br><span class="line">bb1b6b6eff6a: Pull complete</span><br><span class="line">a65f125fa718: Pull complete</span><br><span class="line">2d9f8dd09be2: Pull complete</span><br><span class="line">37b912cb2afe: Pull complete</span><br><span class="line">79592d21cb7f: Pull complete</span><br><span class="line">00bfe968d82d: Pull complete</span><br><span class="line">79cf546d4770: Pull complete</span><br><span class="line">2b3c2e6bacee: Pull complete</span><br><span class="line">Digest: sha256:aaba540cdd9313645d892f4f20573e8b42b30e5be71c054b7befed2f7da5f85b</span><br><span class="line">Status: Downloaded newer image for mysql:5.7</span><br><span class="line">Creating composetest_mysql_1     ... done</span><br><span class="line">Creating composetest_wordpress_1 ... done</span><br><span class="line">Attaching to composetest_mysql_1, composetest_wordpress_1</span><br><span class="line">wordpress_1  | WordPress not found in &#x2F;var&#x2F;www&#x2F;html - copying now...</span><br><span class="line">mysql_1      | Initializing database</span><br><span class="line">mysql_1      | 2018-07-28T09:36:34.481405Z 0 [Warning] TIMESTAMP with implicit DEFAULT value is deprecated. Please use --explicit_defaults_for_timestamp server option (see documentation for more details).</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>在浏览器中访问<code>127.0.0.1:8080</code>,查看wordpress是否运行</li>
+</ol>
+<p><img src="compose_run_wordpress.png" alt="compose_run_wordpress"></p>
+<p>填写信息ing…</p>
+<p><img src="compose_wordpress_success.png" alt="compose_wordpress_success"></p>
+<p>测试成功!</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>Docker Compose是一个相当有用的工具,对于多容器组合运行时,可以节省很多时间</p>
+<p>这篇文章仅仅是对Docker Compose的基本性了解,以后还有待补充与完善</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E8%BF%90%E7%BB%B4/" rel="tag"><i class="fa fa-tag"></i> 运维</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/07/28/docker%E5%91%BD%E4%BB%A4%E6%95%B4%E7%90%86/" rel="prev" title="docker命令整理">
+      <i class="fa fa-chevron-left"></i> docker命令整理
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/07/29/ansible%E5%88%9D%E6%AD%A5%E4%BA%86%E8%A7%A3/" rel="next" title="ansible初步了解">
+      ansible初步了解 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Docker-Compose安装"><span class="nav-number">1.</span> <span class="nav-text">Docker Compose安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#开始使用Docker-Compose"><span class="nav-number">2.</span> <span class="nav-text">开始使用Docker Compose</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#第一步-定义应用程序的环境"><span class="nav-number">2.1.</span> <span class="nav-text">第一步,定义应用程序的环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#第二步-创建Dockerfile"><span class="nav-number">2.2.</span> <span class="nav-text">第二步,创建Dockerfile</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#第三步-在Compose文件中定义服务"><span class="nav-number">2.3.</span> <span class="nav-text">第三步,在Compose文件中定义服务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#第四步-使用Compose命令构建并运行应用程序"><span class="nav-number">2.4.</span> <span class="nav-text">第四步,使用Compose命令构建并运行应用程序</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

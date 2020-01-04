@@ -1,0 +1,3038 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="以前整理的golang语法,现在把它搬到这里.目录的话点右下角按钮 变量什么是变量">
+<meta property="og:type" content="article">
+<meta property="og:title" content="golang基础语法">
+<meta property="og:url" content="https://staight.github.io/2018/07/28/golang%E5%9F%BA%E7%A1%80%E8%AF%AD%E6%B3%95/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="以前整理的golang语法,现在把它搬到这里.目录的话点右下角按钮 变量什么是变量">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://staight.github.io/2018/07/28/golang%E5%9F%BA%E7%A1%80%E8%AF%AD%E6%B3%95/Goroutine_run.png">
+<meta property="article:published_time" content="2018-07-28T03:52:59.000Z">
+<meta property="article:modified_time" content="2019-10-02T17:49:50.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="golang">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://staight.github.io/2018/07/28/golang%E5%9F%BA%E7%A1%80%E8%AF%AD%E6%B3%95/Goroutine_run.png">
+
+<link rel="canonical" href="https://staight.github.io/2018/07/28/golang%E5%9F%BA%E7%A1%80%E8%AF%AD%E6%B3%95/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>golang基础语法 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2018/07/28/golang%E5%9F%BA%E7%A1%80%E8%AF%AD%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          golang基础语法
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-07-28 11:52:59" itemprop="dateCreated datePublished" datetime="2018-07-28T11:52:59+08:00">2018-07-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-03 01:49:50" itemprop="dateModified" datetime="2019-10-03T01:49:50+08:00">2019-10-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>以前整理的golang语法,现在把它搬到这里.目录的话点右下角按钮</p>
+<h2 id="变量"><a href="#变量" class="headerlink" title="变量"></a>变量</h2><h3 id="什么是变量"><a href="#什么是变量" class="headerlink" title="什么是变量"></a>什么是变量</h3><p>变量(Variable)是给某个内存地址起的一个名字.用来存储某个特定类型的值</p>
+<h3 id="声明单一变量"><a href="#声明单一变量" class="headerlink" title="声明单一变量"></a>声明单一变量</h3><p>声明一个变量的语法为:var name type.例如:</p>
+<pre><code>var age int</code></pre><p>声明了一个类型为int,名称为age的变量.如果一个变量没有被赋予任何值,go会自动将这个变量初始化为其类型的0值</p>
+<pre><code>fmt.Println(&quot;my age is&quot;,age)
+
+输出:my age is 0</code></pre><p>一个变量可以被赋予其类型的任何值</p>
+<pre><code>age=24
+age=28</code></pre><h3 id="声明一个带初值的变量"><a href="#声明一个带初值的变量" class="headerlink" title="声明一个带初值的变量"></a>声明一个带初值的变量</h3><p>声明一个带初值的变量的语法为:var name type = initialvalue:例如:</p>
+<pre><code>var age int = 29</code></pre><h3 id="类型推导"><a href="#类型推导" class="headerlink" title="类型推导"></a>类型推导</h3><p>如果声明一个变量时提供了初始值,Go可以根据该初始值来自动推导变量的类型.即如果声明变量时提供了初始值,就可以不必指定其类型</p>
+<pre><code>var age = 29</code></pre><h3 id="多变量声明"><a href="#多变量声明" class="headerlink" title="多变量声明"></a>多变量声明</h3><p>多变量声明的语法为:var name1, name2 type = initialvalue1, initialvalue2,例如:</p>
+<pre><code>var width, height int = 100, 50</code></pre><p>如果制定初始值,则type可以省略:</p>
+<pre><code>var width, height = 100, 50</code></pre><p>如果不指定width和height的初值,它们将自动被赋值为0</p>
+<p>有时需要在一条语句中声明多个不同类型的变量:</p>
+<pre><code>var (
+    name1 = initialvalue1,
+    name2 = initialvalue2
+)</code></pre><h3 id="简短声明"><a href="#简短声明" class="headerlink" title="简短声明"></a>简短声明</h3><p>声明变量的简短语法是 name := initialvalue.例如:</p>
+<pre><code>name, age := &quot;naveen&quot;, 29</code></pre><p>该简短声明允许给已声明的变量赋值,但必须有一个新声明的变量</p>
+<pre><code>a, b := 10, 20
+
+fmt.Println(&quot;a =&quot;, a, &quot;b =&quot;, b)
+
+b, c := 10, 20
+
+fmt.Println(&quot;b =&quot;, b, &quot;c =&quot;, c)
+
+a,b:=100,200 //错误,没有新变量
+
+注:简短声明只能用在函数中</code></pre><p>变量可以被赋予运行时产生的值:</p>
+<pre><code>a := math.Min(a,b)</code></pre><h2 id="类型"><a href="#类型" class="headerlink" title="类型"></a>类型</h2><p>下面是Go支持的基本类型</p>
+<ul>
+<li>bool</li>
+<li>Numeric Types<ul>
+<li>int8, int16, int32, int64, int</li>
+<li>uint8, uint16, uint32, uint64, uint</li>
+<li>float32, float64</li>
+<li>complex64, complex128</li>
+<li>byte</li>
+<li>rune</li>
+</ul>
+</li>
+<li>string</li>
+</ul>
+<h3 id="bool"><a href="#bool" class="headerlink" title="bool"></a>bool</h3><p>bool类型表示一个布尔值,值为true或者false</p>
+<pre><code>a := true
+b := false
+
+c := a &amp;&amp; b //false
+d := a || b //true</code></pre><h3 id="有符号整型"><a href="#有符号整型" class="headerlink" title="有符号整型"></a>有符号整型</h3><ul>
+<li><p>int8</p>
+<p>  表示8位有符号整型<br>  大小:8位<br>  范围:-128～127</p>
+</li>
+<li><p>int16</p>
+<p>  表示16位有符号整型<br>  大小:16位<br>  范围:-32768～32767</p>
+</li>
+<li><p>int32</p>
+<p>  表示32位有符号整型<br>  大小:32位<br>  范围:-2147483648～2147483647</p>
+</li>
+<li><p>int64</p>
+<p>  表示64位有符号整型<br>  大小:64位<br>  范围:-9223372036854775808～9223372036854775807</p>
+</li>
+<li><p>int</p>
+<p>  根据不同的底层平台(Underlying Platform),表示32或64位整型.除非对整型的大小有特定的需求,否则通常应该使用int表示整型<br>  大小:在32位系统下是32位,而在64位系统下是64位<br>  范围:在32位系统下是-2147483648～2147483647,而在64位系统是-9223372036854775808～9223372036854775807</p>
+</li>
+</ul>
+<p>在Printf方法中,使用”%T”格式说明符,可以打印出变量的类型<br>Go的unsafe包提供了一个Sizeof函数,接受变量并返回它的字节大小(小心使用,可能有移植性问题)</p>
+<pre><code>a := 10
+
+fmt.Printf(&quot;%T&quot;, a) //int
+fmt.Printf(&quot;%d&quot;,unsafe.Sizeof(a)) //8,即64位</code></pre><h3 id="无符号整型"><a href="#无符号整型" class="headerlink" title="无符号整型"></a>无符号整型</h3><ul>
+<li><p>uint8</p>
+<p>  表示8位无符号整型<br>  大小：8 位<br>  范围：0～255</p>
+</li>
+<li><p>uint16</p>
+<p>  表示16位无符号整型<br>  大小:16位<br>  范围:0～65535</p>
+</li>
+<li><p>uint32</p>
+<p>  表示32位无符号整型<br>  大小:32位<br>  范围:0～4294967295</p>
+</li>
+<li><p>uint64</p>
+<p>  表示64位无符号整型<br>  大小:64位<br>  范围:0～18446744073709551615</p>
+</li>
+<li><p>uint</p>
+<p>  根据不同的底层平台,表示32或64位无符号整型<br>  大小:在32位系统下是32位,而在64位系统下是64位<br>  范围:在32位系统下是0～4294967295,而在64位系统是0～18446744073709551615</p>
+</li>
+</ul>
+<h3 id="浮点型"><a href="#浮点型" class="headerlink" title="浮点型"></a>浮点型</h3><ul>
+<li><p>float32</p>
+<p>  32位浮点数</p>
+</li>
+<li><p>float64</p>
+<p>  64位浮点数</p>
+</li>
+</ul>
+<h3 id="复数类型"><a href="#复数类型" class="headerlink" title="复数类型"></a>复数类型</h3><ul>
+<li><p>complex64</p>
+<p>  实部和虚部都是float32类型的的复数</p>
+</li>
+<li><p>complex128</p>
+<p>  实部和虚部都是float64类型的的复数</p>
+</li>
+</ul>
+<p>使用简短语法创建复数:</p>
+<pre><code>c := 6+7i</code></pre><p>内建函数complex创建一个包含实部和虚部的复数,complex函数的定义如下:</p>
+<pre><code>func complex(r,i FloatType) ComplexType</code></pre><p>该函数的参数分别是实部和虚部,并返回一个复数类型<br>实部和虚部应该是相同的类型,也就是float32或float64<br>如果类型是float32,则返回complex64;如果都是float64,则返回complex128</p>
+<p>例:</p>
+<pre><code>c1 := 3 + 6i
+c2 := complex(4, 9)
+cadd := c1 + c2
+fmt.Println(c1, cadd)
+
+输出:(3+6i) (7+15i)</code></pre><h3 id="其他数字类型"><a href="#其他数字类型" class="headerlink" title="其他数字类型"></a>其他数字类型</h3><p>byte是uint8的别名<br>rune是int32的别名</p>
+<h3 id="string类型"><a href="#string类型" class="headerlink" title="string类型"></a>string类型</h3><p>在Golang中,字符串是字节的集合</p>
+<pre><code>first := &quot;Wan&quot;
+last := &quot;ShaoBo&quot;
+name := first +&quot; &quot;+ last
+fmt.Println(&quot;My name is&quot;,name)
+
+输出:My name is Wan ShaoBo</code></pre><h3 id="类型转换"><a href="#类型转换" class="headerlink" title="类型转换"></a>类型转换</h3><p>Go 有着非常严格的强类型特征.Go 没有自动类型提升或类型转换</p>
+<pre><code>i := 55      //int
+j := 67.8    //float64
+sum := i + j //错误,不允许int+float64</code></pre><p>要修复这个错误,需要类型转换</p>
+<pre><code>sum := i + int(j) //j被转换为int类型</code></pre><h2 id="常量"><a href="#常量" class="headerlink" title="常量"></a>常量</h2><h3 id="定义常量"><a href="#定义常量" class="headerlink" title="定义常量"></a>定义常量</h3><p>常量(constant)表示固定的值,比如2,-32,”abc”,23.23等等</p>
+<pre><code>var a int = 50
+var b string = &quot;abc&quot;
+
+a和b分别被赋值为常量50和&quot;abc&quot;
+关键字const用于指示常量,如50和&quot;abc&quot;
+上例尽管没有const关键字,但它们在Go的内部表示为常量</code></pre><p>关键字cosnt修饰的名字为常量,不能被重新赋予任何值</p>
+<pre><code>const a = 55
+a = 90 //错误</code></pre><p>常量的值必须在编译期间确定.因此不能将函数的返回值赋给常量</p>
+<pre><code>const a = math.Sqrt(4) //错误</code></pre><h3 id="字符串常量"><a href="#字符串常量" class="headerlink" title="字符串常量"></a>字符串常量</h3><p>在Go中任何用双引号括起来的值都是字符串常量</p>
+<p>字符串常量没有类型</p>
+<pre><code>const hello = &quot;hello&quot; //&quot;hello&quot;无类型,hello也无类型</code></pre><p>Go是强类型语言,所有变量都需要显式类型<br>在需要类型的场合,编译器会根据常量的值和上下文将常量转换为相应的类型</p>
+<pre><code>var name = &quot;Sam&quot; //变量name被赋值为无类型常量时会获取其默认类型</code></pre><p>可以创建一个有类型的常量</p>
+<pre><code>const name string = &quot;hello&quot;</code></pre><h3 id="布尔常量"><a href="#布尔常量" class="headerlink" title="布尔常量"></a>布尔常量</h3><p>布尔常量与字符串常量(在概念上)没有区别.布尔常量只包含两个值:true和false</p>
+<pre><code>const trueConst = true</code></pre><h3 id="数值常量"><a href="#数值常量" class="headerlink" title="数值常量"></a>数值常量</h3><p>数值常量包括整数,浮点数以及复数常量</p>
+<pre><code>const a = 5
+var intVar int = a
+var int32Var int32 = a
+var float64Var float64 = a
+var complex64Var complex64 = a
+
+a无类型,使用时随上下文变化而变化</code></pre><h3 id="数值表达式"><a href="#数值表达式" class="headerlink" title="数值表达式"></a>数值表达式</h3><p>数值常量可以在表达式中自由的混合和匹配,仅当将它们赋值给变量或者在代码中明确需要类型的时候,才需要它们的类型</p>
+<pre><code>a := 3.6 / 3
+fmt.Println(a) //输出1.2</code></pre><h2 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h2><h3 id="什么是函数"><a href="#什么是函数" class="headerlink" title="什么是函数"></a>什么是函数</h3><p>函数是一段可以实现特定任务的代码块.一个函数接收一个输入,对其执行一些运算,然后生成一个输出</p>
+<h3 id="函数声明"><a href="#函数声明" class="headerlink" title="函数声明"></a>函数声明</h3><p>声明一个函数的语法:</p>
+<pre><code>func functionname(parametername type) returntype {  
+    //function body
+}
+
+指定一个参数的语法是参数名后面跟随着参数类型.任何数量的参数都可以被指定为像(parameter1 type, parameter2 type)的样式</code></pre><p>参数和返回类型在函数中是可选的.也就是说函数可以无输入也无输出:</p>
+<pre><code>func functionname() {  
+}</code></pre><h3 id="函数示例"><a href="#函数示例" class="headerlink" title="函数示例"></a>函数示例</h3><p>写一个简单的函数,以商品的价格和数量作为输入,以总共的价格作为输出</p>
+<pre><code>func calculateBill(price int, no int) int {  
+    var totalPrice = price * no
+    return totalPrice
+}
+
+上述函数有两个输入的参数price和no,类型是int.返回totalPrice,类型是int</code></pre><p>如果连续的参数是同样的类型,我们可以避免每次都写类型,在参数的最后写一次即可</p>
+<pre><code>func calculateBill(price, no int) int {  
+    var totalPrice = price * no
+    return totalPrice
+}</code></pre><h3 id="多个返回值"><a href="#多个返回值" class="headerlink" title="多个返回值"></a>多个返回值</h3><p>Go允许函数拥有多个返回值</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+)
+
+func rectProps(length, width float64)(float64, float64) {  
+    var area = length * width
+    var perimeter = (length + width) * 2
+    return area, perimeter
+}
+
+func main() {  
+        area, perimeter := rectProps(10.8, 5.6)
+    fmt.Printf(&quot;Area %f Perimeter %f&quot;, area, perimeter)</code></pre><h3 id="命令的返回值"><a href="#命令的返回值" class="headerlink" title="命令的返回值"></a>命令的返回值</h3><p>如果返回值在一开始即被命名,可以认为它们在函数的第一行即被定义</p>
+<pre><code>func rectProps(length, width float64)(area, perimeter float64) {  
+    area = length * width
+    perimeter = (length + width) * 2
+    return //no explicit return value
+}
+
+area和perimeter是被命名的返回变量.当return语句出现时,它们会自动从函数中返回</code></pre><h3 id="空白标识符"><a href="#空白标识符" class="headerlink" title="空白标识符"></a>空白标识符</h3><p>_是Go中的空白标识符.它可以代替任何类型的任何变量</p>
+<p>_可以用在以下情况:函数有多个返回值,而实际需要的返回值却不是全部<br>这时,就可以使用_来代替不需要的返回值</p>
+<p>area, _ := rectProps(10.8, 5.6) // perimeter is discarded</p>
+<h2 id="包"><a href="#包" class="headerlink" title="包"></a>包</h2><p>在现实场景,把整个源代码都写在一个文件中是不行的<br>包用于组织go的源代码为了更高的可重用性和可读性</p>
+<h3 id="main函数和main包"><a href="#main函数和main包" class="headerlink" title="main函数和main包"></a>main函数和main包</h3><p>每个可执行的go程序一定包含一个main函数.这个函数是执行入口.main函数应该在main包中</p>
+<p>语法package packagename指定了一个源文件属于一个包.这应该在每个go源文件的第一行</p>
+<p>go install命令会查找一个有main函数的文件,然后编译它并放在工作目录的bin文件夹下</p>
+<h3 id="创建自定义包"><a href="#创建自定义包" class="headerlink" title="创建自定义包"></a>创建自定义包</h3><p>属于某个包的源文件应该被放置在它们自己的文件夹中.把文件夹命名为包的名称是Go的惯例</p>
+<h3 id="导出名称"><a href="#导出名称" class="headerlink" title="导出名称"></a>导出名称</h3><p>在Go中,任何以大写字母开头的变量或函数是导出名称<br>只有导出的函数和变量能被其他包访问</p>
+<h3 id="init函数"><a href="#init函数" class="headerlink" title="init函数"></a>init函数</h3><p>每个包可以包括一个init函数.init函数没有参数和返回值,并且不能明确的去调用它</p>
+<pre><code>func init() {
+}</code></pre><p>init函数可以用来执行初始化任务,也可以在程序执行之前判断其正确性</p>
+<p>一个包初始化的顺序:</p>
+<p>包的初始化顺序实际上就是代码的顺序</p>
+<ol>
+<li>导入的包,如果包中有init函数则立刻执行</li>
+<li>全局变量,又称包级别的变量</li>
+<li>main包的init函数</li>
+<li>main函数(如果有的话)</li>
+</ol>
+<p>如果一个包导入其他包,那么被导入的包首先初始化</p>
+<p>一个包只会初始化一次,即使它被多个包导入</p>
+<h3 id="空白标识符的使用"><a href="#空白标识符的使用" class="headerlink" title="空白标识符的使用"></a>空白标识符的使用</h3><p>在Go中,导入一个包却不使用是不合法的<br>但在开发中,导入一个包以待以后使用是很常见的.此时,”_”将解决这些问题</p>
+<pre><code>var _ = rectangle.Area</code></pre><p>有时我们需要导入一个包仅仅是为了确认包的初始化是否生效,而完全不需要包中的函数和变量,此时也可以使用”_”</p>
+<pre><code>import (
+    _ &quot;geometry/rectangle&quot;
+)</code></pre><p>这个程序只会执行rectangle包的init函数</p>
+<h3 id="包的别名"><a href="#包的别名" class="headerlink" title="包的别名"></a>包的别名</h3><p>如果包的名称过于冗长,则可以给其起一个别名</p>
+<pre><code>import (
+    a &quot;fmt&quot;
+)
+
+func main() {
+    a.Println(&quot;helloworld&quot;)
+}</code></pre><h2 id="if-else语句"><a href="#if-else语句" class="headerlink" title="if_else语句"></a>if_else语句</h2><h3 id="if语句"><a href="#if语句" class="headerlink" title="if语句"></a>if语句</h3><p>if是一个条件语句.它的语法是:</p>
+<pre><code>if condition {  
+}</code></pre><p>如果condition是true,那么{}中的语句将被执行</p>
+<p>不同于C,{}块是强制的,即使其中只有一个语句</p>
+<h3 id="else组件"><a href="#else组件" class="headerlink" title="else组件"></a>else组件</h3><p>if语句有可选的else if和else组件</p>
+<pre><code>if condition {  
+} else if condition {
+} else {
+}</code></pre><p>可以有任意数量的else if语句</p>
+<p>例:查找一个数是奇数还是偶数</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+)
+
+func main() {  
+    num := 10
+    if num % 2 == 0 { //checks if number is even
+        fmt.Println(&quot;the number is even&quot;)
+    }  else {
+        fmt.Println(&quot;the number is odd&quot;)
+    }
+}</code></pre><h3 id="可选的statement组件"><a href="#可选的statement组件" class="headerlink" title="可选的statement组件"></a>可选的statement组件</h3><p>有一个if语句的变种,它包括一个可选的statement部件,在判定条件之前被执行:</p>
+<pre><code>if statement; condition {  
+}</code></pre><p>例:重写奇偶数的判定</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+)
+
+func main() {  
+    if num := 10; num % 2 == 0 { //checks if number is even
+        fmt.Println(num,&quot;is even&quot;)
+    }  else {
+        fmt.Println(num,&quot;is odd&quot;)
+    }
+}</code></pre><p>在该程序,num在if语句块中被初始化<br>需要注意的是变量num只在该if_else语句块中可用.当我们在if_else语句块外使用变量num,编译器会报错</p>
+<h3 id="杂项"><a href="#杂项" class="headerlink" title="杂项"></a>杂项</h3><p>else语句应当和if的反大括号}位于同一行.如果不这么做编译器将会报错</p>
+<p>例:</p>
+<pre><code>if num % 2 == 0 { //checks if number is even
+        fmt.Println(&quot;the number is even&quot;)
+    }  
+    else {
+        fmt.Println(&quot;the number is odd&quot;)
+    }</code></pre><p>该程序中else和}并不在同一行,这在Go中是不允许的</p>
+<p>这样做的原因是:如果}是一行最后的符号,那么Go会在其后添加一个分号,以作为语句块的结束.但是,if_else语句显然并不是在其if语句的最后就结束的</p>
+<h2 id="循环"><a href="#循环" class="headerlink" title="循环"></a>循环</h2><p>一个循环语句用于反复执行一个语句块</p>
+<p>在Go中,for是唯一可用的循环语句.Go不存在while或者do while语句</p>
+<h3 id="for循环语法"><a href="#for循环语法" class="headerlink" title="for循环语法"></a>for循环语法</h3><pre><code>for initialisation; condition; post {  
+}</code></pre><p>initialisation语句只会被执行一次<br>在循环初始化后,condition语句将被检查,如果是true则执行{}块中的代码<br>post语句将在每次循环成功迭代后被执行<br>在post语句被执行后,condition语句重新被检测,如果true,循环将重复执行,否则循环结束</p>
+<p>这三个组件,即initialisation,condition,post都是可选的</p>
+<p>例:重复打印数字,从1到10</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+)
+
+func main() {  
+    for i := 1; i &lt;= 10; i++ {
+        fmt.Printf(&quot; %d&quot;,i)
+    }
+}</code></pre><p>该程序将会打印1 2 3 4 5 6 7 8 9 10<br>在循环中声明的变量仅仅在循环中有效.即变量i不能在循环语句外使用</p>
+<h3 id="break"><a href="#break" class="headerlink" title="break"></a>break</h3><p>break语句用于在循环语句中突然终止循环</p>
+<p>例:打印数字到5后终止循环</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+)
+
+func main() {  
+    for i := 1; i &lt;= 10; i++ {
+        if i &gt; 5 {
+            break //loop is terminated if i &gt; 5
+        }
+        fmt.Printf(&quot;%d &quot;, i)
+    }
+    fmt.Printf(&quot;\nline after for loop&quot;)
+}</code></pre><h3 id="continue"><a href="#continue" class="headerlink" title="continue"></a>continue</h3><p>continue语句用于跳出循环的该次迭代,并立即开始下次迭代</p>
+<p>例:只打印偶数</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+)
+
+func main() {  
+    for i := 1; i &lt;= 10; i++ {
+        if i%2 == 0 {
+            continue
+        }
+        fmt.Printf(&quot;%d &quot;, i)
+    }
+}</code></pre><h3 id="更多示例"><a href="#更多示例" class="headerlink" title="更多示例"></a>更多示例</h3><pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+)
+
+func main() {  
+    i := 0
+    for ;i &lt;= 10; { // initialisation and post are omitted
+        fmt.Printf(&quot;%d &quot;, i)
+        i += 2
+    }
+}</code></pre><p>该for循环只有condition组件</p>
+<p>上面for循环的分号也可以被忽略.这种格式被认为是while循环的一种替代:</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+)
+
+func main() {  
+    i := 0
+    for i &lt;= 10 { //semicolons are ommitted and only condition is present
+        fmt.Printf(&quot;%d &quot;, i)
+        i += 2
+    }
+}</code></pre><p>可以在循环中声明和操作多个变量:</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+)
+
+func main() {  
+    for no, i := 10, 1; i &lt;= 10 &amp;&amp; no &lt;= 19; i, no = i+1, no+1 { //multiple initialisation and increment
+        fmt.Printf(&quot;%d * %d = %d\n&quot;, no, i, no*i)
+    }
+
+}</code></pre><h3 id="无限循环"><a href="#无限循环" class="headerlink" title="无限循环"></a>无限循环</h3><p>无限循环的语法:</p>
+<pre><code>for {  
+}</code></pre><p>示例:重复打印</p>
+<pre><code>package main
+
+import &quot;fmt&quot;
+
+func main() {  
+    for {
+        fmt.Println(&quot;Hello World&quot;)
+    }
+}</code></pre><h2 id="Switch语句"><a href="#Switch语句" class="headerlink" title="Switch语句"></a>Switch语句</h2><p>switch语句可以判断一个表达式,和一系列可能的匹配相比对,最后根据符合的匹配执行代码块<br>switch语句可以被认为是写if_else子句的惯用方式</p>
+<p>例:根据手指号打印手指名</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+)
+
+func main() {  
+    finger := 4
+    switch finger {
+    case 1:
+        fmt.Println(&quot;Thumb&quot;)
+    case 2:
+        fmt.Println(&quot;Index&quot;)
+    case 3:
+        fmt.Println(&quot;Middle&quot;)
+    case 4:
+        fmt.Println(&quot;Ring&quot;)
+    case 5:
+        fmt.Println(&quot;Pinky&quot;)
+
+    }
+}</code></pre><p>重复的常量case是不被允许的</p>
+<p>例:case常量重复,报错</p>
+<pre><code>switch finger {
+    case 1:
+        fmt.Println(&quot;Thumb&quot;)
+    case 2:
+        fmt.Println(&quot;Index&quot;)
+    case 3:
+        fmt.Println(&quot;Middle&quot;)
+    case 4:
+        fmt.Println(&quot;Ring&quot;)
+    case 4://duplicate case
+        fmt.Println(&quot;Another Ring&quot;)
+    case 5:
+        fmt.Println(&quot;Pinky&quot;)
+    }</code></pre><h3 id="默认case"><a href="#默认case" class="headerlink" title="默认case"></a>默认case</h3><p>当没有任何一个case匹配时,默认case将被执行</p>
+<p>例:</p>
+<pre><code>switch finger := 8; finger {
+    case 1:
+        fmt.Println(&quot;Thumb&quot;)
+    case 2:
+        fmt.Println(&quot;Index&quot;)
+    case 3:
+        fmt.Println(&quot;Middle&quot;)
+    case 4:
+        fmt.Println(&quot;Ring&quot;)
+    case 5:
+        fmt.Println(&quot;Pinky&quot;)
+    default: //default case
+        fmt.Println(&quot;incorrect finger number&quot;)
+    }</code></pre><p>finger的值是8,它不匹配任何case,因此default子句将被执行<br>default子句可以在switch的任何位置</p>
+<p>一个switch可以包含一个可选的statement,它将在表达式判断之前执行</p>
+<h3 id="多个表达式的情况"><a href="#多个表达式的情况" class="headerlink" title="多个表达式的情况"></a>多个表达式的情况</h3><p>可能在一个case子句中包含多个表达式.它们之间用逗号分离</p>
+<p>例:</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+)
+
+func main() {  
+    letter := &quot;i&quot;
+    switch letter {
+    case &quot;a&quot;, &quot;e&quot;, &quot;i&quot;, &quot;o&quot;, &quot;u&quot;: //multiple expressions in case
+        fmt.Println(&quot;vowel&quot;)
+    default:
+        fmt.Println(&quot;not a vowel&quot;)
+    }
+}</code></pre><h3 id="没有表达式的switch"><a href="#没有表达式的switch" class="headerlink" title="没有表达式的switch"></a>没有表达式的switch</h3><p>如果表达式被忽略,那么该switch就会被认为是switch true</p>
+<p>例:</p>
+<pre><code>num := 75
+    switch { // expression is omitted
+    case num &gt;= 0 &amp;&amp; num &lt;= 50:
+        fmt.Println(&quot;num is greater than 0 and less than 50&quot;)
+    case num &gt;= 51 &amp;&amp; num &lt;= 100:
+        fmt.Println(&quot;num is greater than 51 and less than 100&quot;)
+    case num &gt;= 101:
+        fmt.Println(&quot;num is greater than 100&quot;)
+    }</code></pre><h3 id="fallthrough语句"><a href="#fallthrough语句" class="headerlink" title="fallthrough语句"></a>fallthrough语句</h3><p>在Go中,当一个case被执行,控制权将立刻跳出switch语句<br>fallthrough语句可以用来把控制权转交给被执行的case语句的下一个语句</p>
+<p>例:</p>
+<pre><code>switch num := number(); { //num is not a constant
+    case num &lt; 50:
+        fmt.Printf(&quot;%d is lesser than 50\n&quot;, num)
+        fallthrough
+    case num &lt; 100:
+        fmt.Printf(&quot;%d is lesser than 100\n&quot;, num)
+        fallthrough
+    case num &lt; 200:
+        fmt.Printf(&quot;%d is lesser than 200&quot;, num)
+    }
+
+输出:
+    75 is lesser than 100  
+    75 is lesser than 200</code></pre><p>fallthrough语句应该是一个case语句的最后一个语句.如果它被放在case的中间位置,编译器将会报错</p>
+<h2 id="Arrays"><a href="#Arrays" class="headerlink" title="Arrays"></a>Arrays</h2><p>一个数组是相同类型元素的集合.在Go中一个数组是不能包含不同类型元素的</p>
+<h3 id="声明"><a href="#声明" class="headerlink" title="声明"></a>声明</h3><p>一个数组是[n]T类型的.n是元素的数量,T是每个元素的类型</p>
+<p>有多种不同的方式声明一个数组.首先看第一种:</p>
+<pre><code>var a [3]int
+fmt.Println(a)</code></pre><p>var a[3]int声明了一个长度为3的整型数组<br>所有在数组中的元素会自动初始化为其类型的零值<br>运行该程序将输出[0 0 0]</p>
+<p>一个数组的索引从0开始,length-1结束:</p>
+<pre><code>var a [3]int //int array with length 3
+a[0] = 12 // array index starts at 0
+a[1] = 78
+a[2] = 50</code></pre><p>使用简短声明声明一个数组:</p>
+<pre><code>a := [3]int{12, 78, 50}</code></pre><p>简短声明不必要对数组的每个元素都进行声明:</p>
+<pre><code>a := [3]int{12}
+fmt.Println(a) //输出[12 0 0]</code></pre><p>甚至可以在数组的声明中忽略其长度并用…代替:</p>
+<pre><code>a := [...]int{12, 78, 50}
+
+这样编译器将会自动确定数组的长度</code></pre><p>数组的长度事实上也是类型的一部分.因此[5]int和[25]int是不同类型的.因为这,数组的长度是固定的,无法改变.如果需要改变长度,可以使用切片类型</p>
+<h3 id="数组是值类型"><a href="#数组是值类型" class="headerlink" title="数组是值类型"></a>数组是值类型</h3><p>在Go中,数组是值类型而不是引用类型</p>
+<p>当拷贝数组时,原始数组的值将拷贝到新的数组.当新数组改变,原始数组不会有影响:</p>
+<pre><code>a := [...]string{&quot;USA&quot;,&quot;China&quot;,&quot;India&quot;,&quot;Germany&quot;}
+b := a
+b[0] = &quot;Singapore&quot;
+fmt.Println(&quot;a is &quot;,a) //a is [USA China India Germany France]
+fmt.Println(&quot;b is &quot;,b) //b is [Singapore China India Germany France]</code></pre><p>相似的,当像函数传递数组参数时,它们通过值传递,原始数组不会改变:</p>
+<pre><code>func changeLocal(num [5]int) {  
+    num[0] = 55
+    fmt.Println(&quot;inside function &quot;, num)
+
+}
+func main() {  
+    num := [...]int{5, 6, 7, 8, 8}
+    fmt.Println(&quot;before passing to function &quot;, num)
+    changeLocal(num) //num is passed by value
+    fmt.Println(&quot;after passing to function &quot;, num)
+
+输出:
+    before passing to function  [5 6 7 8 8]  
+    inside function  [55 6 7 8 8]  
+    after passing to function  [5 6 7 8 8]</code></pre><h3 id="数组的长度"><a href="#数组的长度" class="headerlink" title="数组的长度"></a>数组的长度</h3><p>通过向函数len传递数组参数可以得到该数组的长度:</p>
+<pre><code>a := [...]float64{67.7, 89.8, 21, 78}
+fmt.Println(&quot;length of a is&quot;,len(a)) //输出4</code></pre><p>使用长度迭代数组<br>for循环可以用来迭代数组的每个元素:</p>
+<pre><code>a := [...]float64{67.7, 89.8, 21, 78}
+for i := 0; i &lt; len(a); i++ { //looping from 0 to the length of the array
+        fmt.Printf(&quot;%d th element of a is %.2f\n&quot;, i, a[i])
+}</code></pre><p>for循环的range用法可以更好的迭代数组:</p>
+<pre><code>for i, v := range a {//range returns both the index and value
+    fmt.Printf(&quot;%d the element of a is %.2f\n&quot;, i, v)
+}</code></pre><p>如果只想要value而忽略index,可以使用_来代替index:</p>
+<pre><code>for _, v := range a { //ignores index  
+}</code></pre><h3 id="多维数组"><a href="#多维数组" class="headerlink" title="多维数组"></a>多维数组</h3><p>至今使用的都是单维数组,可以创建一个多维数组:</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+)
+
+func printarray(a [3][2]string) {  
+    for _, v1 := range a {
+        for _, v2 := range v1 {
+            fmt.Printf(&quot;%s &quot;, v2)
+        }
+        fmt.Printf(&quot;\n&quot;)
+    }
+}
+
+func main() {  
+    a := [3][2]string{
+        {&quot;lion&quot;, &quot;tiger&quot;},
+        {&quot;cat&quot;, &quot;dog&quot;},
+        {&quot;pigeon&quot;, &quot;peacock&quot;}, //this comma is necessary. The compiler will complain if you omit this comma
+    }
+    printarray(a)
+    var b [3][2]string
+    b[0][0] = &quot;apple&quot;
+    b[0][1] = &quot;samsung&quot;
+    b[1][0] = &quot;microsoft&quot;
+    b[1][1] = &quot;google&quot;
+    b[2][0] = &quot;AT&amp;T&quot;
+    b[2][1] = &quot;T-Mobile&quot;
+    fmt.Printf(&quot;\n&quot;)
+    printarray(b)
+}</code></pre><h2 id="Slices"><a href="#Slices" class="headerlink" title="Slices"></a>Slices</h2><p>slice是在数组之上的包装,方便,灵活,强大<br>slice没有自己的数据,它仅仅是已存在数组的引用</p>
+<h3 id="创建一个slice"><a href="#创建一个slice" class="headerlink" title="创建一个slice"></a>创建一个slice</h3><p>一个有类型T元素的切片可以认为是类型[]T</p>
+<pre><code>a := [5]int{76, 77, 78, 79, 80}
+var b []int = a[1:4] //creates a slice from a[1] to a[3]
+fmt.Println(b) //输出[77,78,79]
+
+a[start:end]从数组a创建了一个切片</code></pre><p>创建切片的其它方式:</p>
+<pre><code>c := []int{6,7,8}
+fmt.Println(c) //输出:[6 7 8]
+
+该程序创建了一个数组,并返回了一个存储在c中的切片引用</code></pre><h3 id="修改切片"><a href="#修改切片" class="headerlink" title="修改切片"></a>修改切片</h3><p>切片没有自己的数据,它仅仅是底层数组的引用<br>任何对切片的修改将影响到底层数组</p>
+<pre><code>darr := [...]int{57, 89, 90, 82, 100, 78, 67, 69, 59}
+dslice := darr[2:5]
+fmt.Println(&quot;array before&quot;,darr)
+for i := range dslice {
+    dslice[i]++
+}
+fmt.Println(&quot;array after&quot;,darr)
+
+输出:
+    array before [57 89 90 82 100 78 67 69 59]
+    array after [57 89 91 83 101 78 67 69 59]  
+
+dslice从数组的2,3,4引用创建切片,然后通过for循环修改数组的值</code></pre><p>当多个切片同时映射一个底层数组时,每个切片的改变都会影响到数组:</p>
+<pre><code>numa := [3]int{78, 79 ,80}
+nums1 := numa[:] //creates a slice which contains all elements of the array
+nums2 := numa[:]
+fmt.Println(&quot;array before change 1&quot;,numa)
+nums1[0] = 100
+fmt.Println(&quot;array after modification to slice nums1&quot;, numa)
+nums2[1] = 101
+fmt.Println(&quot;array after modification to slice nums2&quot;, numa)</code></pre><h3 id="切片的长度和容量-capacity"><a href="#切片的长度和容量-capacity" class="headerlink" title="切片的长度和容量(capacity)"></a>切片的长度和容量(capacity)</h3><p>切片的长度是切片中元素的数量.切片的容量是其底层数组从创建切片的索引到最后的元素的数量</p>
+<pre><code>fruitarray := [...]string{&quot;apple&quot;, &quot;orange&quot;, &quot;grape&quot;, &quot;mango&quot;, &quot;water melon&quot;, &quot;pine apple&quot;, &quot;chikoo&quot;}
+fruitslice := fruitarray[1:3]
+fmt.Printf(&quot;length of slice %d capacity %d&quot;, len(fruitslice), cap(fruitslice)) //length of is 2 and capacity is 6
+
+切片fruitslice从fruitarray的索引1到2创建.因此fruitslice的长度是2
+fruitarray的长度是7.fruitslice从索引1开始创建.因此fruitslice的容量是6</code></pre><p>一个切片可以重新切割直至它的容量.如果超过它的容量则会报错</p>
+<pre><code>fruitslice = fruitslice[:cap(fruitslice)] //re-slicing furitslice till its capacity
+fmt.Println(&quot;After re-slicing length is&quot;,len(fruitslice), &quot;and capacity is&quot;,cap(fruitslice))
+
+切片被重新切割至它的容量.该程序输出:
+    length of slice 2 capacity 6  
+    After re-slicing length is 6 and capacity is 6</code></pre><h3 id="使用make函数创建切片"><a href="#使用make函数创建切片" class="headerlink" title="使用make函数创建切片"></a>使用make函数创建切片</h3><p>函数make可以用来创建一个切片,其参数是类型,长度和容量.容量类型是可选的,默认即是长度.语法:</p>
+<pre><code>func make([]T, len, cap) []T</code></pre><p>make函数创建一个数组,然后返回一个引用它的切片</p>
+<pre><code>i := make([]int, 5, 5)
+fmt.Println(i) //输出[0 0 0 0 0]</code></pre><p>使用make创建切片时,其中的元素都默认是0</p>
+<h3 id="追加到一个切片"><a href="#追加到一个切片" class="headerlink" title="追加到一个切片"></a>追加到一个切片</h3><p>slice是动态的,新的元素可以使用函数append追加到一个slice,语法:</p>
+<pre><code>func append(s []T, x ...T) []T
+
+x...T意味着函数接受可变数量的参数附加到参数x上.这种类型的函数被称为可变参数函数</code></pre><p>当新的元素被追加到slice时,一个新的array被创建,原有数组的元素被拷贝到新的数组中,并且基于新数组的引用的切片将被返回<br>新的切片的容量是原有切片容量的两倍</p>
+<pre><code>cars := []string{&quot;Ferrari&quot;, &quot;Honda&quot;, &quot;Ford&quot;}
+fmt.Println(&quot;cars:&quot;, cars, &quot;has old length&quot;, len(cars), &quot;and capacity&quot;, cap(cars)) //capacity of cars is 3
+cars = append(cars, &quot;Toyota&quot;)
+fmt.Println(&quot;cars:&quot;, cars, &quot;has new length&quot;, len(cars), &quot;and capacity&quot;, cap(cars)) //capacity of cars is doubled to 6
+
+输出:
+    cars: [Ferrari Honda Ford] has old length 3 and capacity 3
+    cars: [Ferrari Honda Ford Toyota] has new length 4 and capacity 6</code></pre><p>拥有0个元素的slice的类型是nil.一个nil切片的长度和容量都是0<br>可以通过函数append给nil切片追加元素</p>
+<pre><code>func main() {  
+    var names []string //zero value of a slice is nil
+    if names == nil {
+        fmt.Println(&quot;slice is nil going to append&quot;)
+        names = append(names, &quot;John&quot;, &quot;Sebastian&quot;, &quot;Vinay&quot;)
+        fmt.Println(&quot;names contents:&quot;,names)
+    }
+}
+
+输出:
+    slice is nil going to append  
+    names contents: [John Sebastian Vinay]</code></pre><p>也可以使用运算符…把一个切片追加到另一个切片</p>
+<pre><code>func main() {  
+    veggies := []string{&quot;potatoes&quot;,&quot;tomatoes&quot;,&quot;brinjal&quot;}
+    fruits := []string{&quot;oranges&quot;,&quot;apples&quot;}
+    food := append(veggies, fruits...)
+    fmt.Println(&quot;food:&quot;,food)
+}
+
+输出:
+    food: [potatoes tomatoes brinjal oranges apples]</code></pre><h3 id="把切片传递给函数"><a href="#把切片传递给函数" class="headerlink" title="把切片传递给函数"></a>把切片传递给函数</h3><p>切片在内部可以看作是一个结构体类型:</p>
+<pre><code>type slice struct {  
+    Length        int
+    Capacity      int
+    ZerothElement *byte
+}</code></pre><p>一个切片包含了长度,容量和一个指向数组第零个元素的指针<br>当一个切片被传入函数时,即使它是值传递,指针变量也同样会指向其底层的数组<br>因此,当切片被当作参数传入函数时,在函数内部的改变也会影响到函数外部</p>
+<pre><code>func subtactOne(numbers []int) {  
+    for i := range numbers {
+        numbers[i] -= 2
+    }
+
+}
+func main() {  
+    nos := []int{8, 7, 6}
+    fmt.Println(&quot;slice before function call&quot;, nos)
+    subtactOne(nos)                               //function modifies the slice
+    fmt.Println(&quot;slice after function call&quot;, nos) //modifications are visible outside
+}
+
+输出:
+    array before function call [8 7 6]
+    array after function call [6 5 4]</code></pre><h3 id="多维切片"><a href="#多维切片" class="headerlink" title="多维切片"></a>多维切片</h3><p>与数组相似,切片也可以有多维</p>
+<pre><code>func main() {  
+        pls := [][]string {
+            {&quot;C&quot;, &quot;C++&quot;},
+            {&quot;JavaScript&quot;},
+            {&quot;Go&quot;, &quot;Rust&quot;},
+            }
+    for _, v1 := range pls {
+        for _, v2 := range v1 {
+            fmt.Printf(&quot;%s &quot;, v2)
+        }
+        fmt.Printf(&quot;\n&quot;)
+    }
+}</code></pre><h3 id="内存优化"><a href="#内存优化" class="headerlink" title="内存优化"></a>内存优化</h3><p>slice持有对底层数组的引用,只要slice在内存中,数组就不会被GC回收</p>
+<p>假设有一个非常大的数组,而我们只处理其中的一小部分<br>我们从该数组创建一个切片并且开始处理切片<br>需要注意的是,只要有切片引用它,那个数组将一直存在于内存中</p>
+<p>一个解决方案是使用函数copy:</p>
+<pre><code>func copy(dst, src []T) int</code></pre><p>函数copy创建一个原有slice的拷贝<br>这样就可以使用新的slice,而旧的数组将被GC回收</p>
+<pre><code>func countries() []string {  
+    countries := []string{&quot;USA&quot;, &quot;Singapore&quot;, &quot;Germany&quot;, &quot;India&quot;, &quot;Australia&quot;}
+    neededCountries := countries[:len(countries)-2]
+    countriesCpy := make([]string, len(neededCountries))
+    copy(countriesCpy, neededCountries) //copies neededCountries to countriesCpy
+    return countriesCpy
+}
+func main() {  
+    countriesNeeded := countries()
+    fmt.Println(countriesNeeded)
+}</code></pre><h2 id="可变参数函数"><a href="#可变参数函数" class="headerlink" title="可变参数函数"></a>可变参数函数</h2><h3 id="什么是可变参数函数"><a href="#什么是可变参数函数" class="headerlink" title="什么是可变参数函数"></a>什么是可变参数函数</h3><p>可变参数函数是指一个函数能够接受可变数量的参数</p>
+<h3 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h3><p>如果函数最后的参数被表示为…T,那么这个函数可以接受任意数量的类型为T的参数<br>可变参数函数的最后一个参数的类型是切片</p>
+<p>注意:只有最后一个参数允许是可变长的</p>
+<h3 id="例子和理解可变参数函数如何工作"><a href="#例子和理解可变参数函数如何工作" class="headerlink" title="例子和理解可变参数函数如何工作"></a>例子和理解可变参数函数如何工作</h3><p>之前使用过的append函数即是一个可变函数函数</p>
+<pre><code>func append(slice []Type, elems ...Type) []Type
+
+elems是一个可变长的参数,因此append可以接受许多参数</code></pre><p>例:在一系列整数中查找一个整数</p>
+<pre><code>func find(num int, nums ...int) {  
+    fmt.Printf(&quot;type of nums is %T\n&quot;, nums) //type of nums is []int
+    found := false
+    for i, v := range nums {
+        if v == num {
+            fmt.Println(num, &quot;found at index&quot;, i, &quot;in&quot;, nums)
+            found = true
+        }
+    }
+    if !found {
+        fmt.Println(num, &quot;not found in &quot;, nums)
+    }
+    fmt.Printf(&quot;\n&quot;)
+}
+func main() {  
+    find(89, 89, 90, 95)
+    find(45, 56, 67, 45, 90, 109)
+    find(78, 38, 56, 98)
+    find(87)
+}</code></pre><p>可变参数函数工作的方式:当可变数量的参数传入函数中时,它们将被转化为相同类型的切片<br>比如,当89,90,95这三个参数传入find前,编译器将它们变为[]int{89,90,95}的切片类型,然后再传入find函数<br>如果未传入参数,那么传入的则会是nil切片,其长度和容量都是0</p>
+<h3 id="将一个切片传入可变参数函数"><a href="#将一个切片传入可变参数函数" class="headerlink" title="将一个切片传入可变参数函数"></a>将一个切片传入可变参数函数</h3><p>例:</p>
+<pre><code>nums := []int{89, 90, 95}
+
+如果直接传入切片,编译器会报错,因为find函数想要的是int类型,而传入的则是[]int类型</code></pre><p>有一个语法糖可以使切片传入可变参数函数<br>在切片的后缀加上…,那么切片将直接传入函数而没必要创建一个新的切片</p>
+<pre><code>nums := []int{89, 90, 95}
+find(89,nums...)</code></pre><h3 id="可变参数函数的杂项"><a href="#可变参数函数的杂项" class="headerlink" title="可变参数函数的杂项"></a>可变参数函数的杂项</h3><p>如果将切片传入可变参数函数,由于切片是引用传递,函数中的改变会影响到切片底层数组,因此必须谨慎对待</p>
+<h2 id="Map"><a href="#Map" class="headerlink" title="Map"></a>Map</h2><h3 id="map是什么"><a href="#map是什么" class="headerlink" title="map是什么"></a>map是什么</h3><p>map是Go中的一个内置变量,它能把一个值与一个键相关联</p>
+<h3 id="如何创建一个map"><a href="#如何创建一个map" class="headerlink" title="如何创建一个map"></a>如何创建一个map</h3><p>可以通过make函数创建一个map.语法:</p>
+<pre><code>make(map[type of key]type of value)</code></pre><p>示例:</p>
+<pre><code>personSalary := make(map[string]int)
+
+创建了一个名为personSalary的map,具有string类型的key和int类型的value</code></pre><p>没有value的map是nil.无法给nil map添加元素,因此只能通过make函数初始化map</p>
+<pre><code>func main() {  
+    var personSalary map[string]int
+    if personSalary == nil {
+        fmt.Println(&quot;map is nil. Going to make one.&quot;)
+        personSalary = make(map[string]int)
+    }
+}
+
+该程序中,personSalary是nil,因此它应该使用make进行初始化</code></pre><h3 id="给map添加元素"><a href="#给map添加元素" class="headerlink" title="给map添加元素"></a>给map添加元素</h3><p>map添加元素的语法和array相同</p>
+<pre><code>func main() {  
+    personSalary := make(map[string]int)
+    personSalary[&quot;steve&quot;] = 12000
+    personSalary[&quot;jamie&quot;] = 15000
+    personSalary[&quot;mike&quot;] = 9000
+    fmt.Println(&quot;personSalary map contents:&quot;, personSalary)
+}
+
+输出:
+    personSalary map contents: map[steve:12000 jamie:15000 mike:9000]</code></pre><p>也可以在声明map时就初始化</p>
+<pre><code>func main() {  
+    personSalary := map[string]int {
+        &quot;steve&quot;: 12000,
+        &quot;jamie&quot;: 15000,
+    }
+    personSalary[&quot;mike&quot;] = 9000
+    fmt.Println(&quot;personSalary map contents:&quot;, personSalary)
+}
+
+输出:
+    personSalary map contents: map[steve:12000 jamie:15000 mike:9000]</code></pre><p>map的键没有必要必须是string,所有的可比的类型都可以是键,例如boolean,integer,float,complex等等</p>
+<h3 id="访问一个map的元素"><a href="#访问一个map的元素" class="headerlink" title="访问一个map的元素"></a>访问一个map的元素</h3><p>得到一个map的元素的语法:</p>
+<pre><code>map[key]</code></pre><p>例如</p>
+<pre><code>func main() {  
+    personSalary := map[string]int{
+        &quot;steve&quot;: 12000,
+        &quot;jamie&quot;: 15000,
+    }
+    personSalary[&quot;mike&quot;] = 9000
+    employee := &quot;jamie&quot;
+    fmt.Println(&quot;Salary of&quot;, employee, &quot;is&quot;, personSalary[employee])
+}
+
+输出:
+    Salary of jamie is 15000</code></pre><p>如果一个元素不存在怎么办?map会返回那个元素的零值<br>在personSalary map的示例中,int类型的零值将被返回</p>
+<p>如果想知道一个键是否在map中?</p>
+<pre><code>value, ok := map[key]
+
+如果ok的值是true,则指定的键是存在的并且它的值是value,否则键不存在</code></pre><p>for循环的range格式可以用来遍历一个map</p>
+<pre><code>func main() {  
+    personSalary := map[string]int{
+        &quot;steve&quot;: 12000,
+        &quot;jamie&quot;: 15000,
+    }
+    personSalary[&quot;mike&quot;] = 9000
+    fmt.Println(&quot;All items of a map&quot;)
+    for key, value := range personSalary {
+        fmt.Printf(&quot;personSalary[%s] = %d\n&quot;, key, value)
+    }
+
+}
+
+在使用for range时,遍历一个map的顺序是不保证的</code></pre><h3 id="删除元素"><a href="#删除元素" class="headerlink" title="删除元素"></a>删除元素</h3><p>从一个map中删除一个key的语法是:</p>
+<pre><code>delete(map, key)
+
+delete函数不返回任何值</code></pre><p>例:</p>
+<pre><code>delete(personSalary, &quot;steve&quot;)</code></pre><h3 id="map的长度"><a href="#map的长度" class="headerlink" title="map的长度"></a>map的长度</h3><p>可以使用len函数确定一个map的长度</p>
+<pre><code>func main() {  
+    personSalary := map[string]int{
+        &quot;steve&quot;: 12000,
+        &quot;jamie&quot;: 15000,
+    }
+    personSalary[&quot;mike&quot;] = 9000
+    fmt.Println(&quot;length is&quot;, len(personSalary))
+
+}
+
+输出:
+    length is 3</code></pre><h3 id="map是引用类型"><a href="#map是引用类型" class="headerlink" title="map是引用类型"></a>map是引用类型</h3><p>与slice相似,map也是引用类型<br>当map分配给一个新的变量的时候,它们同时指向一个内部的数据结构体.因此一个有改动就会影响另一个</p>
+<p>例:</p>
+<pre><code>func main() {  
+    personSalary := map[string]int{
+        &quot;steve&quot;: 12000,
+        &quot;jamie&quot;: 15000,
+    }
+    personSalary[&quot;mike&quot;] = 9000
+    fmt.Println(&quot;Original person salary&quot;, personSalary)
+    newPersonSalary := personSalary
+    newPersonSalary[&quot;mike&quot;] = 18000
+    fmt.Println(&quot;Person salary changed&quot;, personSalary)
+
+}
+
+输出:
+    Original person salary map[steve:12000 jamie:15000 mike:9000]
+    Person salary changed map[steve:12000 jamie:15000 mike:18000]</code></pre><h3 id="map比较相等"><a href="#map比较相等" class="headerlink" title="map比较相等"></a>map比较相等</h3><p>map不能使用==运算符比较.只有一个map是nil时才可以用==<br>比较两个map的方法只有遍历其中的所有元素</p>
+<h2 id="String"><a href="#String" class="headerlink" title="String"></a>String</h2><p>String在Go中应被特殊提及,它不同于其它语言中的string</p>
+<h3 id="什么是string"><a href="#什么是string" class="headerlink" title="什么是string"></a>什么是string</h3><p>在Go中,string是字节的切片.可以通过把内容包在””间来创建一个string</p>
+<p>string也可以被包含到反引号``间,这样,Go将不会对其内容做任何转义</p>
+<pre><code>func main() {  
+    name := &quot;Hello World&quot;
+    fmt.Println(name)
+}</code></pre><p>string是utf-8编码的</p>
+<h3 id="获得一个string的个别字节"><a href="#获得一个string的个别字节" class="headerlink" title="获得一个string的个别字节"></a>获得一个string的个别字节</h3><p>由于string是字节的切片,可以获得一个string的每个字节</p>
+<pre><code>func printBytes(s string) {  
+    for i:= 0; i &lt; len(s); i++ {
+        fmt.Printf(&quot;%x &quot;, s[i])
+    }
+}
+
+func main() {  
+    name := &quot;Hello World&quot;
+    printBytes(name)
+}
+
+输出:
+    48 65 6c 6c 6f 20 57 6f 72 6c 64</code></pre><p>len(s)返回一个string中的字节数<br>%x是十六进制的格式控制符</p>
+<p>注意:如果依据len(s)对string的每个字节进行打印,则无法正常显示占用大于一个字节的字符的值</p>
+<h3 id="rune类型"><a href="#rune类型" class="headerlink" title="rune类型"></a>rune类型</h3><p>rune是Go中的一个内置类型,它是int32的别名<br>rune代表一个unicode代码点,它可以解决使用for循环无法打印utf字符的问题</p>
+<pre><code>func printBytes(s string) {  
+    for i:= 0; i &lt; len(s); i++ {
+        fmt.Printf(&quot;%x &quot;, s[i])
+    }
+}
+
+func printChars(s string) {  
+    runes := []rune(s)
+    for i:= 0; i &lt; len(runes); i++ {
+        fmt.Printf(&quot;%c &quot;,runes[i])
+    }
+}
+
+func main() {  
+    name := &quot;Hello World&quot;
+    printBytes(name)
+    fmt.Printf(&quot;\n&quot;)
+    printChars(name)
+    fmt.Printf(&quot;\n\n&quot;)
+    name = &quot;Señor&quot;
+    printBytes(name)
+    fmt.Printf(&quot;\n&quot;)
+    printChars(name)
+}
+
+输出:
+    48 65 6c 6c 6f 20 57 6f 72 6c 64
+    H e l l o   W o r l d
+
+    53 65 c3 b1 6f 72
+    S e ñ o r</code></pre><p>string中每个字符的字节数依类型而定可能是int8,int16,int24或int32,用len(s)的方式遍历的是string的每个字节<br>如果在遍历前将string的每个字符都扩容到int32,则用len(s)的方式遍历就可以正确打印每个字符</p>
+<h3 id="string的for-range循环"><a href="#string的for-range循环" class="headerlink" title="string的for range循环"></a>string的for range循环</h3><p>Go提供了一个更简单的方式去迭代string的每个字符</p>
+<pre><code>func printCharsAndBytes(s string) {  
+    for index, rune := range s {
+        fmt.Printf(&quot;%c starts at byte %d\n&quot;, rune, index)
+    }
+}
+
+func main() {  
+    name := &quot;Señor&quot;
+    printCharsAndBytes(name)
+}
+
+输出:
+    S starts at byte 0  
+    e starts at byte 1  
+    ñ starts at byte 2
+    o starts at byte 4  
+    r starts at byte 5  </code></pre><h3 id="使用字节的切片来构造一个string"><a href="#使用字节的切片来构造一个string" class="headerlink" title="使用字节的切片来构造一个string"></a>使用字节的切片来构造一个string</h3><p>使用十六进制构造</p>
+<pre><code>func main() {  
+    byteSlice := []byte{0x43, 0x61, 0x66, 0xC3, 0xA9}
+    str := string(byteSlice)
+    fmt.Println(str)
+}
+
+输出:
+    Café</code></pre><p>使用十进制构造,和十六进制一样</p>
+<pre><code>func main() {  
+    byteSlice := []byte{67, 97, 102, 195, 169}//decimal equivalent of {&apos;\x43&apos;, &apos;\x61&apos;, &apos;\x66&apos;, &apos;\xC3&apos;, &apos;\xA9&apos;}
+    str := string(byteSlice)
+    fmt.Println(str)
+}</code></pre><p>使用rune的切片构造一个字符串</p>
+<p>例:构造Señor</p>
+<pre><code>func main() {  
+    runeSlice := []rune{0x0053, 0x0065, 0x00f1, 0x006f, 0x0072} //Unicode code points
+    str := string(runeSlice)
+    fmt.Println(str)
+}</code></pre><h3 id="string的长度"><a href="#string的长度" class="headerlink" title="string的长度"></a>string的长度</h3><p>utf8包中的RuneCountInString函数可以知道一个字符串的长度</p>
+<pre><code>func RuneCountInString(s string) (n int)
+
+该方法以一个string作为参数然后返回它的rune的数量</code></pre><p>例:</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+    &quot;unicode/utf8&quot;
+)
+
+func length(s string) {  
+    fmt.Printf(&quot;length of %s is %d\n&quot;, s, utf8.RuneCountInString(s))
+}
+
+func main() {  
+
+    word1 := &quot;Señor&quot;
+    length(word1)
+    word2 := &quot;Pets&quot;
+    length(word2)
+}
+
+输出:
+    length of Señor is 5  
+    length of Pets is 4  </code></pre><h3 id="string无法改变"><a href="#string无法改变" class="headerlink" title="string无法改变"></a>string无法改变</h3><p>在Go中,string是无法改变的.一旦一个string被创建,就不可能改变它</p>
+<pre><code>h := &quot;hello&quot;
+h[0] = &apos;a&apos; //报错:main.go:8: cannot assign to s[0]</code></pre><p>为了解决string的无法改变性,string可以先转化为rune的切片,改变了需要的内容并且返回要给新的string</p>
+<pre><code>func mutate(s []rune) string {  
+    s[0] = &apos;a&apos;
+    return string(s)
+}
+func main() {  
+    h := &quot;hello&quot;
+    fmt.Println(mutate([]rune(h)))
+}</code></pre><h2 id="Pointer"><a href="#Pointer" class="headerlink" title="Pointer"></a>Pointer</h2><p>pointer是一个存储着其它变量的地址的变量</p>
+<h3 id="声明一个pointer"><a href="#声明一个pointer" class="headerlink" title="声明一个pointer"></a>声明一个pointer</h3><p>*T是一个pointer变量,它指向一个类型为T的变量</p>
+<p>例:</p>
+<pre><code>func main() {  
+    b := 255
+    var a *int = &amp;b
+    fmt.Printf(&quot;Type of a is %T\n&quot;, a)
+    fmt.Println(&quot;address of b is&quot;, a)
+}
+
+输出:
+    Type of a is *int  
+    address of b is 0x1040a124  </code></pre><p>&amp;操作符用于得到一个变量的地址</p>
+<h3 id="空值的pointer"><a href="#空值的pointer" class="headerlink" title="空值的pointer"></a>空值的pointer</h3><p>空值的pointer是nil</p>
+<p>例:</p>
+<pre><code>func main() {  
+    a := 25
+    var b *int
+    if b == nil {
+        fmt.Println(&quot;b is&quot;, b)
+        b = &amp;a
+        fmt.Println(&quot;b after initialization is&quot;, b)
+    }
+}
+
+输出:
+    b is &lt;nil&gt;  
+    b after initialisation is 0x1040a124  </code></pre><h3 id="解引用一个指针"><a href="#解引用一个指针" class="headerlink" title="解引用一个指针"></a>解引用一个指针</h3><p>解引用指针意味着获得指针指向的那个变量的值<br>*a是解引用a的语法</p>
+<p>例:</p>
+<pre><code>func main() {  
+    b := 255
+    a := &amp;b
+    fmt.Println(&quot;address of b is&quot;, a)
+    fmt.Println(&quot;value of b is&quot;, *a)
+}
+
+输出:
+    address of b is 0x1040a124  
+    value of b is 255  
+
+func main() {  
+    b := 255
+    a := &amp;b
+    fmt.Println(&quot;address of b is&quot;, a)
+    fmt.Println(&quot;value of b is&quot;, *a)
+    *a++
+    fmt.Println(&quot;new value of b is&quot;, b)
+}
+
+输出:
+    address of b is 0x1040a124  
+    value of b is 255  
+    new value of b is 256  </code></pre><h3 id="给函数传递指针"><a href="#给函数传递指针" class="headerlink" title="给函数传递指针"></a>给函数传递指针</h3><p>例:</p>
+<pre><code>func change(val *int) {  
+    *val = 55
+}
+func main() {  
+    a := 58
+    fmt.Println(&quot;value of a before function call is&quot;,a)
+    b := &amp;a
+    change(b)
+    fmt.Println(&quot;value of a after function call is&quot;, a)
+}
+
+输出:
+    value of a before function call is 58  
+    value of a after function call is 55  </code></pre><p>不要用数组指针作为函数的参数,用切片代替<br>采用数组指针的方式可以使函数改变数组</p>
+<p>例:</p>
+<pre><code>func modify(arr *[3]int) {  
+    (*arr)[0] = 90
+}
+
+func main() {  
+    a := [3]int{89, 90, 91}
+    modify(&amp;a)
+    fmt.Println(a)
+}
+
+输出:
+    [90 90 91]
+
+a[x]是(*a)[x]的简短声明.因此(*arr)[0]可以用arr[0]替换
+
+即使这样可以改变一个数组,在Go中这也不是一个管用方式,我们可以用切片做到这些</code></pre><p>例:使用切片</p>
+<pre><code>func modify(sls []int) {  
+    sls[0] = 90
+}
+
+func main() {  
+    a := [3]int{89, 90, 91}
+    modify(a[:])
+    fmt.Println(a)
+}</code></pre><h3 id="Go不支持指针运算"><a href="#Go不支持指针运算" class="headerlink" title="Go不支持指针运算"></a>Go不支持指针运算</h3><p>Go不像C一样支持指针运算</p>
+<p>例:</p>
+<pre><code>func main() {  
+    b := [...]int{109, 110, 111}
+    p := &amp;b
+    p++
+}
+
+报错:
+    main.go:6: invalid operation: p++ (non-numeric type *[3]int)</code></pre><h2 id="Structure"><a href="#Structure" class="headerlink" title="Structure"></a>Structure</h2><h3 id="什么是结构体"><a href="#什么是结构体" class="headerlink" title="什么是结构体"></a>什么是结构体</h3><p>结构体是用户定义的类型,代表一些字段的集合<br>结构体用于将数据分组到一个单独的集合比起维持它们每一个为单独的类型更有意义的情况</p>
+<p>例如:一个员工firstName,lastName和age.那么将这3个属性分组到一个单独的结构体employee是有意义的</p>
+<h3 id="声明一个结构体"><a href="#声明一个结构体" class="headerlink" title="声明一个结构体"></a>声明一个结构体</h3><p>例:声明一个结构体Employee</p>
+<pre><code>type Employee struct {  
+    firstName string
+    lastName  string
+    age       int
+}</code></pre><p>同样类型的变量可以写在同一行</p>
+<pre><code>type Employee struct {  
+    firstName, lastName string
+    age, salary         int
+}</code></pre><p>上面的Employee结构体被称为命名结构体.因为它创建了一个新的类型叫做Employee,可以用Employee类型创建结构体</p>
+<p>可以声明一个结构体但不声明一个新的变量<br>这种类型的结构体叫做匿名结构体</p>
+<pre><code>var employee struct {  
+        firstName, lastName string
+        age int
+}</code></pre><h3 id="创建命名结构体"><a href="#创建命名结构体" class="headerlink" title="创建命名结构体"></a>创建命名结构体</h3><p>可以先声明一个结构体,在用其创建结构体</p>
+<pre><code>type Employee struct {  
+    firstName, lastName string
+    age, salary         int
+}
+
+func main() {
+
+    //creating structure using field names
+    emp1 := Employee{
+        firstName: &quot;Sam&quot;,
+        age:       25,
+        salary:    500,
+        lastName:  &quot;Anderson&quot;,
+    }
+
+    //creating structure without using field names
+    emp2 := Employee{&quot;Thomas&quot;, &quot;Paul&quot;, 29, 800}
+
+    fmt.Println(&quot;Employee 1&quot;, emp1)
+    fmt.Println(&quot;Employee 2&quot;, emp2)
+}
+
+输出:
+    Employee 1 {Sam Anderson 25 500}  
+    Employee 2 {Thomas Paul 29 800}  </code></pre><h3 id="创建匿名结构体"><a href="#创建匿名结构体" class="headerlink" title="创建匿名结构体"></a>创建匿名结构体</h3><p>匿名结构体不需要定义任何新的结构体类型,就可以创建新的结构体变量</p>
+<pre><code>func main() {  
+    emp3 := struct {
+        firstName, lastName string
+        age, salary         int
+    }{
+        firstName: &quot;Andreah&quot;,
+        lastName:  &quot;Nikola&quot;,
+        age:       31,
+        salary:    5000,
+    }
+
+    fmt.Println(&quot;Employee 3&quot;, emp3)
+}
+
+输出:
+    Employee 3 {Andreah Nikola 31 5000}</code></pre><h3 id="空值的结构体"><a href="#空值的结构体" class="headerlink" title="空值的结构体"></a>空值的结构体</h3><p>当一个结构体在初始化的时候没有赋任何值,那么该字段将会默认赋其类型的零值</p>
+<pre><code>type Employee struct {  
+    firstName, lastName string
+    age, salary         int
+}
+
+func main() {  
+    var emp4 Employee //zero valued structure
+    fmt.Println(&quot;Employee 4&quot;, emp4)
+}
+
+输出:
+    Employee 4 {  0 0}</code></pre><p>也可以将值赋予指定的字段而忽略剩下的.那样,被忽略的字段就会被赋予空值</p>
+<pre><code>func main() {  
+    emp5 := Employee{
+        firstName: &quot;John&quot;,
+        lastName:  &quot;Paul&quot;,
+    }
+    fmt.Println(&quot;Employee 5&quot;, emp5)
+}
+
+输出:
+    Employee 5 {John Paul 0 0}</code></pre><p>获取一个结构体中指定的字段<br>使用点运算符.可以获得一个结构体的指定的字段</p>
+<pre><code>func main() {  
+    emp6 := Employee{&quot;Sam&quot;, &quot;Anderson&quot;, 55, 6000}
+    fmt.Println(&quot;First Name:&quot;, emp6.firstName)
+    fmt.Println(&quot;Last Name:&quot;, emp6.lastName)
+    fmt.Println(&quot;Age:&quot;, emp6.age)
+    fmt.Printf(&quot;Salary: $%d&quot;, emp6.salary)
+}
+
+输出:
+    First Name: Sam  
+    Last Name: Anderson  
+    Age: 55  
+    Salary: $6000  </code></pre><p>也可以先创建一个零值的结构体,然后再给它的字段赋值</p>
+<pre><code>func main() {  
+    var emp7 Employee
+    emp7.firstName = &quot;Jack&quot;
+    emp7.lastName = &quot;Adams&quot;
+    fmt.Println(&quot;Employee 7:&quot;, emp7)
+}
+
+输出:
+    Employee 7: {Jack Adams 0 0}</code></pre><h3 id="结构体指针"><a href="#结构体指针" class="headerlink" title="结构体指针"></a>结构体指针</h3><p>可以创建一个指针并指向一个结构体</p>
+<pre><code>func main() {  
+    emp8 := &amp;Employee{&quot;Sam&quot;, &quot;Anderson&quot;, 55, 6000}
+    fmt.Println(&quot;First Name:&quot;, (*emp8).firstName)
+    fmt.Println(&quot;Age:&quot;, (*emp8).age)
+}
+
+输出:
+    First Name: Sam  
+    Age: 55  
+
+Go可以使用emp8.firstName来代替(*emp8).firstName访问firstname字段</code></pre><h3 id="匿名字段"><a href="#匿名字段" class="headerlink" title="匿名字段"></a>匿名字段</h3><p>可以在结构体中创建一个没有字段名只有类型的字段</p>
+<pre><code>type Person struct {  
+    string
+    int
+}
+
+func main() {  
+    p := Person{&quot;Naveen&quot;, 50}
+    fmt.Println(p)
+}
+
+输出:
+    {Naveen 50}</code></pre><p>即使一个匿名字段没有名称,默认情况下一个匿名字段的名称就是它的类型名</p>
+<pre><code>type Person struct {  
+    string
+    int
+}
+
+func main() {  
+    var p1 Person
+    p1.string = &quot;naveen&quot;
+    p1.int = 50
+    fmt.Println(p1)
+}
+
+输出:
+    {Naveen 50}</code></pre><h3 id="嵌套结构体"><a href="#嵌套结构体" class="headerlink" title="嵌套结构体"></a>嵌套结构体</h3><p>可以在结构体中包含结构体类型的字段</p>
+<pre><code>type Address struct {  
+    city, state string
+}
+type Person struct {  
+    name string
+    age int
+    address Address
+}
+
+func main() {  
+    var p Person
+    p.name = &quot;Naveen&quot;
+    p.age = 50
+    p.address = Address {
+        city: &quot;Chicago&quot;,
+        state: &quot;Illinois&quot;,
+    }
+    fmt.Println(&quot;Name:&quot;, p.name)
+    fmt.Println(&quot;Age:&quot;,p.age)
+    fmt.Println(&quot;City:&quot;,p.address.city)
+    fmt.Println(&quot;State:&quot;,p.address.state)
+}
+
+输出:
+    Name: Naveen  
+    Age: 50  
+    City: Chicago  
+    State: Illinois</code></pre><h3 id="提升字段"><a href="#提升字段" class="headerlink" title="提升字段"></a>提升字段</h3><p>提升字段是指类型为结构体的匿名字段中的字段<br>提升字段可以直接在结构体中获得,而不用再多一层嵌套</p>
+<p>例:city和state字段为提升字段</p>
+<pre><code>type Address struct {  
+    city, state string
+}
+type Person struct {  
+    name string
+    age  int
+    Address
+}
+
+func main() {  
+    var p Person
+    p.name = &quot;Naveen&quot;
+    p.age = 50
+    p.Address = Address{
+        city:  &quot;Chicago&quot;,
+        state: &quot;Illinois&quot;,
+    }
+    fmt.Println(&quot;Name:&quot;, p.name)
+    fmt.Println(&quot;Age:&quot;, p.age)
+    fmt.Println(&quot;City:&quot;, p.city) //city is promoted field
+    fmt.Println(&quot;State:&quot;, p.state) //state is promoted field
+}
+
+输出:
+    Name: Naveen  
+    Age: 50  
+    City: Chicago  
+    State: Illinois  </code></pre><h3 id="导出的结构体和字段"><a href="#导出的结构体和字段" class="headerlink" title="导出的结构体和字段"></a>导出的结构体和字段</h3><p>如果一个结构体以一个大写字母开头,那么它就是一个可被导出的类型,并且能被其它包访问<br>同样的,一个结构体中的字段如果开头大写,那么它可以被其它包访问</p>
+<pre><code>src  
+    structs
+            computer
+                    spec.go
+            main.go
+
+spec.go
+
+    package computer
+
+    type Spec struct { //exported struct  
+        Maker string //exported field
+        model string //unexported field
+        Price int //exported field
+    }
+
+main.go
+
+    package main
+
+    import &quot;structs/computer&quot;  
+    import &quot;fmt&quot;
+
+    func main() {  
+        var spec computer.Spec
+        spec.Maker = &quot;apple&quot;
+        spec.Price = 50000
+        fmt.Println(&quot;Spec:&quot;, spec) //Spec: {apple  50000}
+    }</code></pre><p>如果使用model字段,那么编译器将会报错</p>
+<h3 id="比较结构体"><a href="#比较结构体" class="headerlink" title="比较结构体"></a>比较结构体</h3><p>结构体是值类型<br>如果两个结构体的每个字段可比较,那么结构体就是可比较的<br>如果两个结构体对应的字段都相等,那么这两个结构体就相等</p>
+<pre><code>type name struct {  
+    firstName string
+    lastName string
+}
+
+
+func main() {  
+    name1 := name{&quot;Steve&quot;, &quot;Jobs&quot;}
+    name2 := name{&quot;Steve&quot;, &quot;Jobs&quot;}
+    if name1 == name2 {
+        fmt.Println(&quot;name1 and name2 are equal&quot;)
+    } else {
+        fmt.Println(&quot;name1 and name2 are not equal&quot;)
+    }
+
+    name3 := name{firstName:&quot;Steve&quot;, lastName:&quot;Jobs&quot;}
+    name4 := name{}
+    name4.firstName = &quot;Steve&quot;
+    if name3 == name4 {
+        fmt.Println(&quot;name3 and name4 are equal&quot;)
+    } else {
+        fmt.Println(&quot;name3 and name4 are not equal&quot;)
+    }
+}
+
+输出:
+    name1 and name2 are equal  
+    name3 and name4 are not equal</code></pre><p>如果有字段是不可比较类型,则结构体无法比较</p>
+<pre><code>type image struct {  
+    data map[int]int
+}</code></pre><h3 id="tag"><a href="#tag" class="headerlink" title="tag"></a>tag</h3><p>可以为struct的每个字段写上一个tag.这个tag可以通过反射的机制获取到,最常用的场景就是json序列化和反序列化</p>
+<p>例:获取结构体字段的小写形式</p>
+<pre><code>type student struct {
+    Name string `json:&quot;name&quot;`
+    Age int `json:&quot;age&quot;`
+}</code></pre><h2 id="Method"><a href="#Method" class="headerlink" title="Method"></a>Method</h2><h3 id="什么是方法"><a href="#什么是方法" class="headerlink" title="什么是方法"></a>什么是方法</h3><p>一个方法只是一个具有特殊接收器类型的函数,接收器写在func关键字和方法名称之间<br>接收器可以是结构类型或非结构类型,可用于在该方法内进行访问</p>
+<p>创建一个方法的语法:</p>
+<pre><code>func (t Type) methodName(parameter list) {  
+}</code></pre><h3 id="方法示例"><a href="#方法示例" class="headerlink" title="方法示例"></a>方法示例</h3><p>使用结构体类型的方法并且调用它</p>
+<pre><code>type Employee struct {  
+    name     string
+    salary   int
+    currency string
+}
+
+/*
+    displaySalary() method has Employee as the receiver type
+*/
+func (e Employee) displaySalary() {  
+    fmt.Printf(&quot;Salary of %s is %s%d&quot;, e.name, e.currency, e.salary)
+}
+
+func main() {  
+    emp1 := Employee {
+        name:     &quot;Sam Adolf&quot;,
+        salary:   5000,
+        currency: &quot;$&quot;,
+    }
+    emp1.displaySalary() //Calling displaySalary() method of Employee type
+}
+
+输出:
+    Salary of Sam Adolf is $5000</code></pre><h3 id="为何用方法"><a href="#为何用方法" class="headerlink" title="为何用方法"></a>为何用方法</h3><p>使用函数也能达到上述程序一样的结果</p>
+<pre><code>func displaySalary(e Employee) {  
+    fmt.Printf(&quot;Salary of %s is %s%d&quot;, e.name, e.currency, e.salary)
+}
+
+func main() {  
+    displaySalary(emp1)
+}</code></pre><p>使用方法的理由:</p>
+<ol>
+<li>Go不是一个纯面向对象语言.它不支持类.因此方法是一种表现行为类似类的方式</li>
+<li>Go能够定义名称相同,类型不同的方法,而无法定义名称相同的函数</li>
+</ol>
+<p>示例:</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+    &quot;math&quot;
+)
+
+type Rectangle struct {  
+    length int
+    width  int
+}
+
+type Circle struct {  
+    radius float64
+}
+
+func (r Rectangle) Area() int {  
+    return r.length * r.width
+}
+
+func (c Circle) Area() float64 {  
+    return math.Pi * c.radius * c.radius
+}
+
+func main() {  
+    r := Rectangle{
+        length: 10,
+        width:  5,
+    }
+    fmt.Printf(&quot;Area of rectangle %d\n&quot;, r.Area())
+    c := Circle{
+        radius: 12,
+    }
+    fmt.Printf(&quot;Area of circle %f&quot;, c.Area())
+}
+
+输出:
+    Area of rectangle 50  
+    Area of circle 452.389342  </code></pre><h3 id="指针接收器和值接收器的比较"><a href="#指针接收器和值接收器的比较" class="headerlink" title="指针接收器和值接收器的比较"></a>指针接收器和值接收器的比较</h3><p>值接收器方法只在方法中有效,而指针接收器方法则全局有效</p>
+<pre><code>type Employee struct {  
+    name string
+    age  int
+}
+
+/*
+Method with value receiver  
+*/
+func (e Employee) changeName(newName string) {  
+    e.name = newName
+}
+
+/*
+Method with pointer receiver  
+*/
+func (e *Employee) changeAge(newAge int) {  
+    e.age = newAge
+}
+
+func main() {  
+    e := Employee{
+        name: &quot;Mark Andrew&quot;,
+        age:  50,
+    }
+    fmt.Printf(&quot;Employee name before change: %s&quot;, e.name)
+    e.changeName(&quot;Michael Andrew&quot;)
+    fmt.Printf(&quot;\nEmployee name after change: %s&quot;, e.name)
+
+    fmt.Printf(&quot;\n\nEmployee age before change: %d&quot;, e.age)
+    (&amp;e).changeAge(51)
+    fmt.Printf(&quot;\nEmployee age after change: %d&quot;, e.age)
+}
+
+输出:
+    Employee name before change: Mark Andrew  
+    Employee name after change: Mark Andrew
+
+    Employee age before change: 50  
+    Employee age after change: 51  </code></pre><p>changeName方法没有改变原结构体的变量,而changeAge方法改变了<br>因为指针传递,需要使用(&amp;e).changeAge(51)去调用方法<br>我们也可以使用e.changeAge(51),编译器会将其翻译为&amp;e</p>
+<h3 id="何时使用指针接收器与值接收器"><a href="#何时使用指针接收器与值接收器" class="headerlink" title="何时使用指针接收器与值接收器"></a>何时使用指针接收器与值接收器</h3><p>一般来说,指针接收器可以在调用者需要看到方法内部变化的时候使用</p>
+<p>指针接收器也可以用在拷贝一个数据结构体不合算的时候</p>
+<p>在其它情况下则可以使用值接收器</p>
+<h3 id="匿名字段的方法"><a href="#匿名字段的方法" class="headerlink" title="匿名字段的方法"></a>匿名字段的方法</h3><p>一个结构类型的匿名字段的方法也可以被调用,就像它们属于那个定义匿名字段的结构体一样</p>
+<pre><code>type address struct {  
+    city  string
+    state string
+}
+
+func (a address) fullAddress() {  
+    fmt.Printf(&quot;Full address: %s, %s&quot;, a.city, a.state)
+}
+
+type person struct {  
+    firstName string
+    lastName  string
+    address
+}
+
+func main() {  
+    p := person{
+        firstName: &quot;Elon&quot;,
+        lastName:  &quot;Musk&quot;,
+        address: address {
+            city:  &quot;Los Angeles&quot;,
+            state: &quot;California&quot;,
+        },
+    }
+
+    p.fullAddress() //accessing fullAddress method of address struct
+
+}
+
+输出:
+    Full address: Los Angeles, California</code></pre><h3 id="方法中的值接收器和函数中的参数的比较"><a href="#方法中的值接收器和函数中的参数的比较" class="headerlink" title="方法中的值接收器和函数中的参数的比较"></a>方法中的值接收器和函数中的参数的比较</h3><p>当一个函数有一个值参数,它就仅仅接受一个值参数</p>
+<p>当一个方法有一个值接收器,它将同时接受值接收器和指针接收器</p>
+<pre><code>type rectangle struct {  
+    length int
+    width  int
+}
+
+func area(r rectangle) {  
+    fmt.Printf(&quot;Area Function result: %d\n&quot;, (r.length * r.width))
+}
+
+func (r rectangle) area() {  
+    fmt.Printf(&quot;Area Method result: %d\n&quot;, (r.length * r.width))
+}
+
+func main() {  
+    r := rectangle{
+        length: 10,
+        width:  5,
+    }
+    area(r)
+    r.area()
+
+    p := &amp;r
+    /*
+        compilation error, cannot use p (type *rectangle) as type rectangle
+        in argument to area  
+    */
+    //area(p)
+
+    p.area()//calling value receiver with a pointer
+}
+
+输出:
+    Area Function result: 50  
+    Area Method result: 50  
+    Area Method result: 50  </code></pre><p>如果向函数传递指针,那么编译器将会报错<br>如果向方法传递指针,那么编译器将会把p.area()转化为(*p).area()</p>
+<h3 id="方法中的指针接收器和函数中的指针参数的比较"><a href="#方法中的指针接收器和函数中的指针参数的比较" class="headerlink" title="方法中的指针接收器和函数中的指针参数的比较"></a>方法中的指针接收器和函数中的指针参数的比较</h3><p>有指针参数的函数仅仅接受指针<br>有指针接收器的方法可同时接受指针和值接收器</p>
+<pre><code>type rectangle struct {  
+    length int
+    width  int
+}
+
+func perimeter(r *rectangle) {  
+    fmt.Println(&quot;perimeter function output:&quot;, 2*(r.length+r.width))
+
+}
+
+func (r *rectangle) perimeter() {  
+    fmt.Println(&quot;perimeter method output:&quot;, 2*(r.length+r.width))
+}
+
+func main() {  
+    r := rectangle{
+        length: 10,
+        width:  5,
+    }
+    p := &amp;r //pointer to r
+    perimeter(p)
+    p.perimeter()
+
+    /*
+        cannot use r (type rectangle) as type *rectangle in argument to perimeter
+    */
+    //perimeter(r)
+
+    r.perimeter()//calling pointer receiver with a value
+
+}
+
+输出:
+    perimeter function output: 30  
+    perimeter method output: 30  
+    perimeter method output: 30  </code></pre><p>如果向函数传递值参数,那么编译器将会报错<br>如果向方法传递指针接收器,那么编译器将会把r.perimeter()转化为(&amp;r).perimeter()</p>
+<h3 id="非结构类型的方法"><a href="#非结构类型的方法" class="headerlink" title="非结构类型的方法"></a>非结构类型的方法</h3><p>使用一个类型定义一个方法时,会有一个问题:方法的接收器的类型的定义和方法的定义应该被放在同一个包中</p>
+<p>至此,所有的结构和结构类型的方法都在同一个main包中,所以它们能够正常工作</p>
+<p>例:定义一个int类型的方法</p>
+<pre><code>package main
+
+func (a int) add(b int) {  
+}
+
+func main() {
+
+}</code></pre><p>如上程序想要使用内置类型int定义一个方法,是不允许的.因此int类型的定义和add方法的定义不在同一个包中</p>
+<p>想要解决这个问题的话,可以创建一个类型作为int的别名</p>
+<pre><code>package main
+
+import &quot;fmt&quot;
+
+type myInt int
+
+func (a myInt) add(b myInt) myInt {  
+    return a + b
+}
+
+func main() {  
+    num1 := myInt(5)
+    num2 := myInt(10)
+    sum := num1.add(num2)
+    fmt.Println(&quot;Sum is&quot;, sum)
+}
+
+输出:
+    Sum is 15</code></pre><h2 id="Interface"><a href="#Interface" class="headerlink" title="Interface"></a>Interface</h2><h3 id="什么是接口"><a href="#什么是接口" class="headerlink" title="什么是接口"></a>什么是接口</h3><p>在面向对象世界中,接口指:”接口定义了一个对象的行为”<br>它仅仅指出对象应该做什么,而接口所实现的行为应该不拘泥于对象</p>
+<p>在Go中,接口是一系列方法的签名.接口指定了一个类型应该拥有什么方法和如何实施这些方法</p>
+<h3 id="声明和实施一个接口"><a href="#声明和实施一个接口" class="headerlink" title="声明和实施一个接口"></a>声明和实施一个接口</h3><p>例:创建接口并实施它</p>
+<pre><code>//interface definition
+type VowelsFinder interface {  
+    FindVowels() []rune
+}
+
+type MyString string
+
+//MyString implements VowelsFinder
+func (ms MyString) FindVowels() []rune {  
+    var vowels []rune
+    for _, rune := range ms {
+        if rune == &apos;a&apos; || rune == &apos;e&apos; || rune == &apos;i&apos; || rune == &apos;o&apos; || rune == &apos;u&apos; {
+            vowels = append(vowels, rune)
+        }
+    }
+    return vowels
+}
+
+func main() {  
+    name := MyString(&quot;Sam Anderson&quot;)
+    var v VowelsFinder
+    v = name // possible since MyString implements VowelsFinder
+    fmt.Printf(&quot;Vowels are %c&quot;, v.FindVowels())
+
+}
+
+输出:
+    Vowels are [a e o]
+
+VowelsFinder是一个接口类型,包含了FindVowels()函数签名
+任何定义了FindVowels()方法的类型都可以被认为是实施了VowelsFinder接口
+
+MyString类型拥有一个名为FindVowels() []rune的方法
+由于MyString拥有VowelsFinder接口的所有方法签名,因此可以说MyString实施了VowelsFinder接口
+
+类型为MyString的变量name将值赋给类型为VowelsFinder的变量v.如果MyString实施了VowelsFinder的话这是被允许的</code></pre><h3 id="接口的实际用处"><a href="#接口的实际用处" class="headerlink" title="接口的实际用处"></a>接口的实际用处</h3><p>上述程序若没有接口也能生效.可以写一个简单的程序,计算一个公司中员工的个人薪水的总共费用</p>
+<pre><code>type SalaryCalculator interface {  
+    CalculateSalary() int
+}
+
+type Permanent struct {  
+    empId    int
+    basicpay int
+    pf       int
+}
+
+type Contract struct {  
+    empId  int
+    basicpay int
+}
+
+//salary of permanent employee is sum of basic pay and pf
+func (p Permanent) CalculateSalary() int {  
+    return p.basicpay + p.pf
+}
+
+//salary of contract employee is the basic pay alone
+func (c Contract) CalculateSalary() int {  
+    return c.basicpay
+}
+
+/*
+total expense is calculated by iterating though the SalaryCalculator slice and summing  
+the salaries of the individual employees  
+*/
+func totalExpense(s []SalaryCalculator) {  
+    expense := 0
+    for _, v := range s {
+        expense = expense + v.CalculateSalary()
+    }
+    fmt.Printf(&quot;Total Expense Per Month $%d&quot;, expense)
+}
+
+func main() {  
+    pemp1 := Permanent{1, 5000, 20}
+    pemp2 := Permanent{2, 6000, 30}
+    cemp1 := Contract{3, 3000}
+    employees := []SalaryCalculator{pemp1, pemp2, cemp1}
+    totalExpense(employees)
+
+}
+
+输出:
+    Total Expense Per Month $14050</code></pre><p>结构体Permanent和Contract都实施了SalaryCalculator接口<br>totalExpense函数计算以SalaryCalculator接口数组作为参数,计算所有员工的总薪水</p>
+<p>使用接口的最大的好处是:totalExpense可以扩展任意的员工类型而不需要任何的代码改动</p>
+<h3 id="接口的内部表示"><a href="#接口的内部表示" class="headerlink" title="接口的内部表示"></a>接口的内部表示</h3><p>一个接口可以被认为是一个元组(type,value)<br>type是接口的底层具体类型,value则是那个具体类型的值</p>
+<pre><code>type Test interface {  
+    Tester()
+}
+
+type MyFloat float64
+
+func (m MyFloat) Tester() {  
+    fmt.Println(m)
+}
+
+func describe(t Test) {  
+    fmt.Printf(&quot;Interface type %T value %v\n&quot;, t, t)
+}
+
+func main() {  
+    var t Test
+    f := MyFloat(89.7)
+    t = f
+    describe(t)
+    t.Tester()
+}
+
+输出:
+    Interface type main.MyFloat value 89.7  
+    89.7  </code></pre><h3 id="空接口"><a href="#空接口" class="headerlink" title="空接口"></a>空接口</h3><p>一个没有方法签名的接口被称为空接口.它可以用interface{}代表<br>由于空接口没有方法签名,因此所有类型都实施了空接口</p>
+<pre><code>func describe(i interface{}) {  
+    fmt.Printf(&quot;Type = %T, value = %v\n&quot;, i, i)
+}
+
+func main() {  
+    s := &quot;Hello World&quot;
+    describe(s)
+    i := 55
+    describe(i)
+    strt := struct {
+        name string
+    }{
+        name: &quot;Naveen R&quot;,
+    }
+    describe(strt)
+}
+
+输出:
+    Type = string, value = Hello World  
+    Type = int, value = 55  
+    Type = struct { name string }, value = {Naveen R}</code></pre><h3 id="类型断言"><a href="#类型断言" class="headerlink" title="类型断言"></a>类型断言</h3><p>类型断言被用于提取接口的底层值</p>
+<p>i.(T)是得到具体类型为T的接口i的底层值的语法</p>
+<pre><code>func assert(i interface{}) {  
+    s := i.(int) //get the underlying int value from i
+    fmt.Println(s)
+}
+func main() {  
+    var s interface{} = 56
+    assert(s)
+}
+
+输出:
+    56
+
+s的具体类型是int,其底层值是56</code></pre><p>如果接口i的类型不是int,那么程序将会崩溃<br>如果不确定接口i的具体类型,可以使用该语法:v, ok := i.(T)<br>如果i的具体类型不是T,那么ok为false,v是类型T的零值</p>
+<pre><code>func assert(i interface{}) {  
+    v, ok := i.(int)
+    fmt.Println(v, ok)
+}
+func main() {  
+    var s interface{} = 56
+    assert(s)
+    var i interface{} = &quot;Steven Paul&quot;
+    assert(i)
+}
+
+输出:
+    56 true  
+    0 false  </code></pre><h3 id="类型交换"><a href="#类型交换" class="headerlink" title="类型交换"></a>类型交换</h3><p>与switch_case语句类似,类型交换可以将一个接口的具体类型和一些指定的类型相比较,唯一不同的是指定的是类型而不是变量</p>
+<pre><code>func findType(i interface{}) {  
+    switch i.(type) {
+    case string:
+        fmt.Printf(&quot;I am a string and my value is %s\n&quot;, i.(string))
+    case int:
+        fmt.Printf(&quot;I am an int and my value is %d\n&quot;, i.(int))
+    default:
+        fmt.Printf(&quot;Unknown type\n&quot;)
+    }
+}
+func main() {  
+    findType(&quot;Naveen&quot;)
+    findType(77)
+    findType(89.98)
+}
+
+输出:
+    I am a string and my value is Naveen  
+    I am an int and my value is 77  
+    Unknown type  </code></pre><p>也可以将一个类型和接口相比较<br>如果有一个实施了一个接口的类型,那么这个类型就能和它实施的接口相比较</p>
+<pre><code>type Describer interface {  
+    Describe()
+}
+type Person struct {  
+    name string
+    age  int
+}
+
+func (p Person) Describe() {  
+    fmt.Printf(&quot;%s is %d years old&quot;, p.name, p.age)
+}
+
+func findType(i interface{}) {  
+    switch v := i.(type) {
+    case Describer:
+        v.Describe()
+    default:
+        fmt.Printf(&quot;unknown type\n&quot;)
+    }
+}
+
+func main() {  
+    findType(&quot;Naveen&quot;)
+    p := Person{
+        name: &quot;Naveen R&quot;,
+        age:  25,
+    }
+    findType(p)
+}
+
+输出:
+    unknown type  
+    Naveen R is 25 years old  </code></pre><h3 id="实施接口比较-指针接收器和值接收器"><a href="#实施接口比较-指针接收器和值接收器" class="headerlink" title="实施接口比较:指针接收器和值接收器"></a>实施接口比较:指针接收器和值接收器</h3><p>除了使用值接收器外,也可以使用指针接收器</p>
+<pre><code>type Describer interface {  
+    Describe()
+}
+type Person struct {  
+    name string
+    age  int
+}
+
+func (p Person) Describe() { //implemented using value receiver  
+    fmt.Printf(&quot;%s is %d years old\n&quot;, p.name, p.age)
+}
+
+type Address struct {  
+    state   string
+    country string
+}
+
+func (a *Address) Describe() { //implemented using pointer receiver  
+    fmt.Printf(&quot;State %s Country %s&quot;, a.state, a.country)
+}
+
+func main() {  
+    var d1 Describer
+    p1 := Person{&quot;Sam&quot;, 25}
+    d1 = p1
+    d1.Describe()
+    p2 := Person{&quot;James&quot;, 32}
+    d1 = &amp;p2
+    d1.Describe()
+
+    var d2 Describer
+    a := Address{&quot;Washington&quot;, &quot;USA&quot;}
+
+    /* compilation error if the following line is
+        uncommented
+        cannot use a (type Address) as type Describer
+        in assignment: Address does not implement
+        Describer (Describe method has pointer
+        receiver)
+    */
+    //d2 = a
+
+    d2 = &amp;a //This works since Describer interface
+    //is implemented by Address pointer in line 22
+    d2.Describe()
+
+}
+
+输出:
+    Sam is 25 years old
+    James is 32 years old
+    State Washington Country USA</code></pre><p>值接收器可以接受指针和值,而指针接收器却只能接受指针<br>原因是指针接收器方法能够同时接受指针或能够得到地址的值,而接口的具体的值是不可寻址的.因此编译器无法自动获得a的地址而失败</p>
+<h3 id="实施多种接口"><a href="#实施多种接口" class="headerlink" title="实施多种接口"></a>实施多种接口</h3><p>一个类型可以实施多于一个的接口</p>
+<pre><code>type SalaryCalculator interface {  
+    DisplaySalary()
+}
+
+type LeaveCalculator interface {  
+    CalculateLeavesLeft() int
+}
+
+type Employee struct {  
+    firstName string
+    lastName string
+    basicPay int
+    pf int
+    totalLeaves int
+    leavesTaken int
+}
+
+func (e Employee) DisplaySalary() {  
+    fmt.Printf(&quot;%s %s has salary $%d&quot;, e.firstName, e.lastName, (e.basicPay + e.pf))
+}
+
+func (e Employee) CalculateLeavesLeft() int {  
+    return e.totalLeaves - e.leavesTaken
+}
+
+func main() {  
+    e := Employee {
+        firstName: &quot;Naveen&quot;,
+        lastName: &quot;Ramanathan&quot;,
+        basicPay: 5000,
+        pf: 200,
+        totalLeaves: 30,
+        leavesTaken: 5,
+    }
+    var s SalaryCalculator = e
+    s.DisplaySalary()
+    var l LeaveCalculator = e
+    fmt.Println(&quot;\nLeaves left =&quot;, l.CalculateLeavesLeft())
+}
+
+输出:
+    Naveen Ramanathan has salary $5200  
+    Leaves left = 25  </code></pre><h3 id="嵌入接口"><a href="#嵌入接口" class="headerlink" title="嵌入接口"></a>嵌入接口</h3><p>尽管Go没有提供继承,但可以通过嵌入其它接口来创建一个新的接口</p>
+<pre><code>type SalaryCalculator interface {  
+    DisplaySalary()
+}
+
+type LeaveCalculator interface {  
+    CalculateLeavesLeft() int
+}
+
+type EmployeeOperations interface {  
+    SalaryCalculator
+    LeaveCalculator
+}
+
+type Employee struct {  
+    firstName string
+    lastName string
+    basicPay int
+    pf int
+    totalLeaves int
+    leavesTaken int
+}
+
+func (e Employee) DisplaySalary() {  
+    fmt.Printf(&quot;%s %s has salary $%d&quot;, e.firstName, e.lastName, (e.basicPay + e.pf))
+}
+
+func (e Employee) CalculateLeavesLeft() int {  
+    return e.totalLeaves - e.leavesTaken
+}
+
+func main() {  
+    e := Employee {
+        firstName: &quot;Naveen&quot;,
+        lastName: &quot;Ramanathan&quot;,
+        basicPay: 5000,
+        pf: 200,
+        totalLeaves: 30,
+        leavesTaken: 5,
+    }
+    var empOp EmployeeOperations = e
+    empOp.DisplaySalary()
+    fmt.Println(&quot;\nLeaves left =&quot;, empOp.CalculateLeavesLeft())
+}
+
+输出:
+    Naveen Ramanathan has salary $5200  
+    Leaves left = 25  </code></pre><h3 id="接口的空值"><a href="#接口的空值" class="headerlink" title="接口的空值"></a>接口的空值</h3><p>接口的空值是nil.一个nil的接口的底层值和具体类型都是nil</p>
+<pre><code>type Describer interface {  
+    Describe()
+}
+
+func main() {  
+    var d1 Describer
+    if d1 == nil {
+        fmt.Printf(&quot;d1 is nil and has type %T value %v\n&quot;, d1, d1)
+    }
+}
+
+输出:
+    d1 is nil and has type &lt;nil&gt; value &lt;nil&gt;</code></pre><p>如果调用nil接口的方法,那么程序将会崩溃</p>
+<h2 id="Introduction-to-Concurrency"><a href="#Introduction-to-Concurrency" class="headerlink" title="Introduction to Concurrency"></a>Introduction to Concurrency</h2><p>Go是一个并发的语言而不是并行的</p>
+<h3 id="什么是并发"><a href="#什么是并发" class="headerlink" title="什么是并发"></a>什么是并发</h3><p>并发指的是一次处理大量事情的能力</p>
+<p>举例:一个人在慢跑.在跑步的时候发现自己的鞋带解开了,于是它就停下来系上鞋带,然后接着跑步.并发即是指他能够处理跑步和系鞋带</p>
+<h3 id="什么是并行"><a href="#什么是并行" class="headerlink" title="什么是并行"></a>什么是并行</h3><p>并行指的是同时处理很多事情</p>
+<p>举例:一个人在慢跑,并且他同时还在听音乐.并行指的是他能同时跑步和听音乐</p>
+<h3 id="并发性和并行性-从技术观点"><a href="#并发性和并行性-从技术观点" class="headerlink" title="并发性和并行性-从技术观点"></a>并发性和并行性-从技术观点</h3><p>假设一个浏览器拥有网页渲染组件和文件下载组件(可以用线程或者协程)<br>当该浏览器运行在单独的处理器中,那么处理器需要对浏览器的两个组件不断进行上下文切换.这就是并发<br>当运行在多个处理器中,网页渲染组件在一个处理器中运行,文件下载组件在另外一个不同的处理器中运行.这就是并行</p>
+<p>并行不一定总是有更快的处理速度<br>并行模式运行的组件需要具备相互交谈的能力.比如在浏览器中文件下载完成后,需要用弹出窗口告诉使用者<br>这种交流在并发系统中开销很低,而在并行系统中则较高</p>
+<h3 id="在Go中并发的支持"><a href="#在Go中并发的支持" class="headerlink" title="在Go中并发的支持"></a>在Go中并发的支持</h3><p>并发在Go中是固有组件,用Goroutine和channel完成</p>
+<h2 id="Goroutine"><a href="#Goroutine" class="headerlink" title="Goroutine"></a>Goroutine</h2><h3 id="什么是Goroutine"><a href="#什么是Goroutine" class="headerlink" title="什么是Goroutine"></a>什么是Goroutine</h3><p>Goroutine是可以同其它函数或方法并发运行的函数或方法<br>Goroutine可以认为是轻量级的线程<br>创建一个Goroutine的开销是十分小的,因此常常看见Go应用程序创建数以千计的Goroutine</p>
+<h3 id="比起线程来说-Goroutine的优点"><a href="#比起线程来说-Goroutine的优点" class="headerlink" title="比起线程来说,Goroutine的优点"></a>比起线程来说,Goroutine的优点</h3><ol>
+<li><p>比起线程,Goroutine是极度轻量级的.它们仅仅需要几kb的栈内存,并且栈能根据应用程序的需要增长和收缩.而线程的栈内存则往往是规定并且是固定的</p>
+</li>
+<li><p>Goroutine被多路复用至os的少量线程.可能一个程序中数千个Goroutine仅仅需要一个线程.如果任何Goroutine需要等待用户输入而被阻塞,那么剩下的Goroutine会被移动至其它的os线程</p>
+</li>
+<li><p>Goroutine使用channel进行通信.使用Goroutine访问共享内存时,通道设计可防止竞争情况发生.channel可以认为是goroutine交流的管道</p>
+</li>
+</ol>
+<h3 id="如何开始一个goroutine"><a href="#如何开始一个goroutine" class="headerlink" title="如何开始一个goroutine"></a>如何开始一个goroutine</h3><p>在函数或方法的前面加上一个关键词go,就可以拥有一个并发的goroutine</p>
+<pre><code>func hello() {  
+    fmt.Println(&quot;Hello world goroutine&quot;)
+}
+func main() {  
+    go hello()
+    fmt.Println(&quot;main function&quot;)
+}
+
+输出:
+    main function</code></pre><p>当一个新的Goroutine开始运行时,它立刻返回而不像函数那样执行完毕后才返回.控制权立刻转交给下一行代码,并且任何Goroutine的返回值都会被忽略</p>
+<p>主goroutine应该和等待所有其它goroutine运行完才运行.如果主goroutine终止,那么程序将会终止,而其它的goroutine将不会运行</p>
+<p>在该程序中,main Goroutine运行完毕后,hello Goroutine没有机会运行,因此不会输出”Hello world goroutine”</p>
+<p>可以修改一下</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+    &quot;time&quot;
+)
+
+func hello() {  
+    fmt.Println(&quot;Hello world goroutine&quot;)
+}
+func main() {  
+    go hello()
+    time.Sleep(1 * time.Second)
+    fmt.Println(&quot;main function&quot;)
+}
+
+输出:
+    Hello world goroutine
+    main function
+
+通过把main Goroutine睡眠的方式等待其它Goroutine执行仅仅是一个演示.Channel可以用于阻塞main Goroutine</code></pre><h3 id="开始多个Goroutine"><a href="#开始多个Goroutine" class="headerlink" title="开始多个Goroutine"></a>开始多个Goroutine</h3><p>示例</p>
+<pre><code>import (  
+    &quot;fmt&quot;
+    &quot;time&quot;
+)
+
+func numbers() {  
+    for i := 1; i &lt;= 5; i++ {
+        time.Sleep(250 * time.Millisecond)
+        fmt.Printf(&quot;%d &quot;, i)
+    }
+}
+func alphabets() {  
+    for i := &apos;a&apos;; i &lt;= &apos;e&apos;; i++ {
+        time.Sleep(400 * time.Millisecond)
+        fmt.Printf(&quot;%c &quot;, i)
+    }
+}
+func main() {  
+    go numbers()
+    go alphabets()
+    time.Sleep(3000 * time.Millisecond)
+    fmt.Println(&quot;main terminated&quot;)
+}
+
+输出:
+    1 a 2 3 b 4 c 5 d e main terminated  </code></pre><p>示意图:</p>
+<p><img src="Goroutine_run.png" alt="Goroutine_run"></p>
+<h2 id="Channel"><a href="#Channel" class="headerlink" title="Channel"></a>Channel</h2><h3 id="什么是channel"><a href="#什么是channel" class="headerlink" title="什么是channel"></a>什么是channel</h3><p>channel可以认为是Goroutine交流的管道</p>
+<h3 id="声明channel"><a href="#声明channel" class="headerlink" title="声明channel"></a>声明channel</h3><p>每一个channel都有一个类型与之相关联.这个类型是channel允许传输的数据的类型</p>
+<p>语法:chan T指类型为T的channel</p>
+<p>零值channel是nil.nil的channel没有任何用,因此channel应该使用make函数定义</p>
+<pre><code>func main() {  
+    var a chan int
+    if a == nil {
+        fmt.Println(&quot;channel a is nil, going to define it&quot;)
+        a = make(chan int)
+        fmt.Printf(&quot;Type of a is %T&quot;, a)
+    }
+}
+
+输出:
+    channel a is nil, going to define it  
+    Type of a is chan int  </code></pre><p>短型声明同样有效</p>
+<pre><code>a := make(chan int)</code></pre><h3 id="从channel发送和接收数据"><a href="#从channel发送和接收数据" class="headerlink" title="从channel发送和接收数据"></a>从channel发送和接收数据</h3><p>从channel发送和接收数据的语法</p>
+<pre><code>data := &lt;- a // read from channel a  
+a &lt;- data // write to channel a  </code></pre><h3 id="发送和接收默认是阻塞的"><a href="#发送和接收默认是阻塞的" class="headerlink" title="发送和接收默认是阻塞的"></a>发送和接收默认是阻塞的</h3><p>当数据发送至一个channel时,send语句会阻塞,直到有Goroutine从该channel中读取数据<br>同样,当需要从channel中读取数据时,read语句是阻塞的,直到有Goroutine从该channel中写数据</p>
+<p>channel的这个属性帮助Goroutine高效率的交流而不需要明确的使用锁或者有条件的变量.这在其它语言中十分普遍</p>
+<h3 id="channel示例程序"><a href="#channel示例程序" class="headerlink" title="channel示例程序"></a>channel示例程序</h3><p>示例程序</p>
+<pre><code>func hello(done chan bool) {  
+    fmt.Println(&quot;Hello world goroutine&quot;)
+    done &lt;- true
+}
+func main() {  
+    done := make(chan bool)
+    go hello(done)
+    &lt;-done
+    fmt.Println(&quot;main function&quot;)
+}
+
+输出:
+    Hello world goroutine  
+    main function  
+
+&lt;-done从已经执行的Goroutine中得到数据,但是并不在任何变量中使用或存储任何数据.这完全是合法的</code></pre><h3 id="channel的其它例子"><a href="#channel的其它例子" class="headerlink" title="channel的其它例子"></a>channel的其它例子</h3><p>示例</p>
+<pre><code>func calcSquares(number int, squareop chan int) {  
+    sum := 0
+    for number != 0 {
+        digit := number % 10
+        sum += digit * digit
+        number /= 10
+    }
+    squareop &lt;- sum
+}
+
+func calcCubes(number int, cubeop chan int) {  
+    sum := 0
+    for number != 0 {
+        digit := number % 10
+        sum += digit * digit * digit
+        number /= 10
+    }
+    cubeop &lt;- sum
+}
+
+func main() {  
+    number := 589
+    sqrch := make(chan int)
+    cubech := make(chan int)
+    go calcSquares(number, sqrch)
+    go calcCubes(number, cubech)
+    squares, cubes := &lt;-sqrch, &lt;-cubech
+    fmt.Println(&quot;Final output&quot;, squares + cubes)
+}
+
+输出:
+    Final output 1536  </code></pre><h3 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h3><p>当使用channel时,一个重要的因素是死锁.如果一个Goroutine正在向channel发送数据,那么正常情况下其它的Goroutine应该接收数据<br>如果这没有发生,那么程序将会因为死锁而崩溃</p>
+<pre><code>func main() {  
+    ch := make(chan int)
+    ch &lt;- 5
+}
+
+程序报错:deadlock</code></pre><h3 id="单向channel"><a href="#单向channel" class="headerlink" title="单向channel"></a>单向channel</h3><p>之前的channel都是双向channel,数据既可以发送也可以接收<br>也可以创建单向channel,其只能发送数据或者接收数据</p>
+<pre><code>func sendData(sendch chan&lt;- int) {  
+    sendch &lt;- 10
+}
+
+func main() {  
+    sendch := make(chan&lt;- int)
+    go sendData(sendch)
+    fmt.Println(&lt;-sendch)
+}
+
+报错:invalid operation
+
+sendch是只发送channel,如果从sendch接收数据,那么程序将会报错</code></pre><p>一个只发送channel没有任何用处.但可以通过channel转换机制使其有用<br>channel转换可以将双向channel转换为单向channel,但反之则不行</p>
+<pre><code>func sendData(sendch chan&lt;- int) {  
+    sendch &lt;- 10
+}
+
+func main() {  
+    chnl := make(chan int)
+    go sendData(chnl)
+    fmt.Println(&lt;-chnl)
+}
+
+输出:
+    10
+
+sendData函数把双向channel转化为单向channel
+在sendData Goroutine内,channel是单向的;而在main Goroutine内,channel是双向的</code></pre><h3 id="关闭channel和channel的for-range循环"><a href="#关闭channel和channel的for-range循环" class="headerlink" title="关闭channel和channel的for_range循环"></a>关闭channel和channel的for_range循环</h3><p>发送者有能力关闭channel去提醒接收者已经没有更多的数据发送给channel了</p>
+<p>接收者可以使用一个多余的变量,用于在接收数据时检查channel是否已经被关闭</p>
+<pre><code>v, ok := &lt;- ch
+
+如果ok是true,表示变量成功从channel中接收数据
+如果ok是false,则表示正在从已关闭的channel中接收数据.接受的数据将是channel类型的零值</code></pre><p>示例</p>
+<pre><code>func producer(chnl chan int) {  
+    for i := 0; i &lt; 10; i++ {
+        chnl &lt;- i
+    }
+    close(chnl)
+}
+func main() {  
+    ch := make(chan int)
+    go producer(ch)
+    for {
+        v, ok := &lt;-ch
+        if ok == false {
+            break
+        }
+        fmt.Println(&quot;Received &quot;, v, ok)
+    }
+}
+
+输出:
+    Received  0 true  
+    Received  1 true  
+    Received  2 true  
+    Received  3 true  
+    Received  4 true  
+    Received  5 true  
+    Received  6 true  
+    Received  7 true  
+    Received  8 true  
+    Received  9 true  </code></pre><p>producer Goroutine调用close()关闭channel</p>
+<p>示例</p>
+<pre><code>func producer(chnl chan int) {  
+    for i := 0; i &lt; 10; i++ {
+        chnl &lt;- i
+    }
+    close(chnl)
+}
+func main() {  
+    ch := make(chan int)
+    go producer(ch)
+    for v := range ch {
+        fmt.Println(&quot;Received &quot;,v)
+    }
+}</code></pre><p>事实上,如果channel关闭,那么for_range循环将会自动退出</p>
+<p>综合示例:数值</p>
+<pre><code>func digits(number int, dchnl chan int) {  
+    for number != 0 {
+        digit := number % 10
+        dchnl &lt;- digit
+        number /= 10
+    }
+    close(dchnl)
+}
+func calcSquares(number int, squareop chan int) {  
+    sum := 0
+    dch := make(chan int)
+    go digits(number, dch)
+    for digit := range dch {
+        sum += digit * digit
+    }
+    squareop &lt;- sum
+}
+
+func calcCubes(number int, cubeop chan int) {  
+    sum := 0
+    dch := make(chan int)
+    go digits(number, dch)
+    for digit := range dch {
+        sum += digit * digit * digit
+    }
+    cubeop &lt;- sum
+}
+
+func main() {  
+    number := 589
+    sqrch := make(chan int)
+    cubech := make(chan int)
+    go calcSquares(number, sqrch)
+    go calcCubes(number, cubech)
+    squares, cubes := &lt;-sqrch, &lt;-cubech
+    fmt.Println(&quot;Final output&quot;, squares+cubes)
+}
+
+输出:
+    Final output 1536  </code></pre><h2 id="Buffered-Channel"><a href="#Buffered-Channel" class="headerlink" title="Buffered Channel"></a>Buffered Channel</h2><h3 id="什么是缓冲channel"><a href="#什么是缓冲channel" class="headerlink" title="什么是缓冲channel"></a>什么是缓冲channel</h3><p>之前提到的channel都是未缓冲的<br>未缓冲channel发送和接收数据都是阻塞的</p>
+<p>可以创建一个带buffer的channel<br>向缓冲channel发送数据只有当缓冲已满时才会阻塞<br>从缓冲channel接收数据只有当缓冲为空时才会阻塞</p>
+<p>创建缓冲channel,可以通过给make函数添加一个额外的capacity参数,它指定了buffer的大小</p>
+<pre><code>ch := make(chan type, capacity)</code></pre><p>一个没有缓冲的channel的容量默认是0<br>如果想要有一个缓冲的channel,那么其容量应该大于0</p>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p>创建一个缓冲channel</p>
+<pre><code>func main() {  
+    ch := make(chan string, 2)
+    ch &lt;- &quot;naveen&quot;
+    ch &lt;- &quot;paul&quot;
+    fmt.Println(&lt;- ch)
+    fmt.Println(&lt;- ch)
+}
+
+输出:
+    naveen  
+    paul  </code></pre><h3 id="另一个示例"><a href="#另一个示例" class="headerlink" title="另一个示例"></a>另一个示例</h3><p>使用Goroutine的缓冲channel</p>
+<pre><code>import (  
+    &quot;fmt&quot;
+    &quot;time&quot;
+)
+
+func write(ch chan int) {  
+    for i := 0; i &lt; 5; i++ {
+        ch &lt;- i
+        fmt.Println(&quot;successfully wrote&quot;, i, &quot;to ch&quot;)
+    }
+    close(ch)
+}
+func main() {  
+    ch := make(chan int, 2)
+    go write(ch)
+    time.Sleep(2 * time.Second)
+    for v := range ch {
+        fmt.Println(&quot;read value&quot;, v,&quot;from ch&quot;)
+        time.Sleep(2 * time.Second)
+
+    }
+}
+
+输出:
+    successfully wrote 0 to ch
+    successfully wrote 1 to ch
+    read value 0 from ch
+    successfully wrote 2 to ch
+    read value 1 from ch
+    successfully wrote 3 to ch
+    read value 2 from ch
+    successfully wrote 4 to ch
+    read value 3 from ch
+    read value 4 from ch</code></pre><h3 id="缓冲channel的死锁"><a href="#缓冲channel的死锁" class="headerlink" title="缓冲channel的死锁"></a>缓冲channel的死锁</h3><p>例</p>
+<pre><code>func main() {  
+    ch := make(chan string, 2)
+    ch &lt;- &quot;naveen&quot;
+    ch &lt;- &quot;paul&quot;
+    ch &lt;- &quot;steve&quot;
+    fmt.Println(&lt;-ch)
+    fmt.Println(&lt;-ch)
+}
+
+报错:
+    deadlock</code></pre><h3 id="缓冲channel的长度与容量"><a href="#缓冲channel的长度与容量" class="headerlink" title="缓冲channel的长度与容量"></a>缓冲channel的长度与容量</h3><p>缓冲channel的容量是指channel可以储存的变量个数<br>缓冲channel的长度是指当前正在排队的元素的个数</p>
+<pre><code>func main() {  
+    ch := make(chan string, 3)
+    ch &lt;- &quot;naveen&quot;
+    ch &lt;- &quot;paul&quot;
+    fmt.Println(&quot;capacity is&quot;, cap(ch))
+    fmt.Println(&quot;length is&quot;, len(ch))
+    fmt.Println(&quot;read value&quot;, &lt;-ch)
+    fmt.Println(&quot;new length is&quot;, len(ch))
+}
+
+输出:
+    capacity is 3  
+    length is 2  
+    read value naveen  
+    new length is 1</code></pre><h2 id="Worker-Pool"><a href="#Worker-Pool" class="headerlink" title="Worker Pool"></a>Worker Pool</h2><h3 id="WaitGroup"><a href="#WaitGroup" class="headerlink" title="WaitGroup"></a>WaitGroup</h3><p>WaitGroup被用于实施工作池<br>工作池用于等待一个集合的Goroutine执行完毕.工作池的控制权在所有的Goroutine执行完毕前都处于阻塞状态</p>
+<p>比如现在有3个正在执行的Goroutine,main Goroutine在终止前等待其它的Goroutine执行完毕.这可以通过WaitGroup完成</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+    &quot;sync&quot;
+    &quot;time&quot;
+)
+
+func process(i int, wg *sync.WaitGroup) {  
+    fmt.Println(&quot;started Goroutine &quot;, i)
+    time.Sleep(2 * time.Second)
+    fmt.Printf(&quot;Goroutine %d ended\n&quot;, i)
+    wg.Done()
+}
+
+func main() {  
+    no := 3
+    var wg sync.WaitGroup
+    for i := 0; i &lt; no; i++ {
+        wg.Add(1)
+        go process(i, &amp;wg)
+    }
+    wg.Wait()
+    fmt.Println(&quot;All go routines finished executing&quot;)
+}
+
+输出:
+    started Goroutine  2  
+    started Goroutine  0  
+    started Goroutine  1  
+    Goroutine 0 ended  
+    Goroutine 2 ended  
+    Goroutine 1 ended  
+    All go routines finished executing  </code></pre><p>WaitGroup是一个结构体<br>WaitGroup工作的方式是使用一个计数器<br>当调用Add方法并传入一个整型值,那么WaitGroup的计数器将会增加那个整型值<br>当调用Done()方法,WaitGroup的计数器将会减1<br>Wait()方法将会阻塞调用它的那个Goroutine,直至计数器的值减至0</p>
+<p>注意一定要传入wg的地址而不是值,如果不传入地址,那么每个Goroutine都会有一份WaitGroup的拷贝</p>
+<h3 id="实施工作池"><a href="#实施工作池" class="headerlink" title="实施工作池"></a>实施工作池</h3><p>使用缓冲channel的一个重要的应用就是工作池的实施</p>
+<p>一般来说,一个工作池是一系列线程的集合.它们等待分配的任务,一旦完成任务后,它们再次可用并继续等待任务</p>
+<p>可以使用缓冲channel实施工作池.下面是我们的工作池的核心功能:<br>    1.创建一个Goroutine池,监听输入缓冲channel,等待任务的分配<br>    2.将作业添加到输入缓冲channel<br>    3.在作业完成后,将结果写到一个输出缓冲channel<br>    4.从输出缓冲channel读取并打印结果</p>
+<p>示例:</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+    &quot;math/rand&quot;
+    &quot;sync&quot;
+    &quot;time&quot;
+)
+
+type Job struct {  
+    id       int
+    randomno int
+}
+type Result struct {  
+    job         Job
+    sumofdigits int
+}
+
+var jobs = make(chan Job, 10)  
+var results = make(chan Result, 10)
+
+func digits(number int) int {  
+    sum := 0
+    no := number
+    for no != 0 {
+        digit := no % 10
+        sum += digit
+        no /= 10
+    }
+    time.Sleep(2 * time.Second)
+    return sum
+}
+func worker(wg *sync.WaitGroup) {  
+    for job := range jobs {
+        output := Result{job, digits(job.randomno)}
+        results &lt;- output
+    }
+    wg.Done()
+}
+func createWorkerPool(noOfWorkers int) {  
+    var wg sync.WaitGroup
+    for i := 0; i &lt; noOfWorkers; i++ {
+        wg.Add(1)
+        go worker(&amp;wg)
+    }
+    wg.Wait()
+    close(results)
+}
+func allocate(noOfJobs int) {  
+    for i := 0; i &lt; noOfJobs; i++ {
+        randomno := rand.Intn(999)
+        job := Job{i, randomno}
+        jobs &lt;- job
+    }
+    close(jobs)
+}
+func result(done chan bool) {  
+    for result := range results {
+        fmt.Printf(&quot;Job id %d, input random no %d , sum of digits %d\n&quot;, result.job.id, result.job.randomno, result.sumofdigits)
+    }
+    done &lt;- true
+}
+func main() {  
+    startTime := time.Now()
+    noOfJobs := 100
+    go allocate(noOfJobs)
+    done := make(chan bool)
+    go result(done)
+    noOfWorkers := 10
+    createWorkerPool(noOfWorkers)
+    &lt;-done
+    endTime := time.Now()
+    diff := endTime.Sub(startTime)
+    fmt.Println(&quot;total time taken &quot;, diff.Seconds(), &quot;seconds&quot;)
+}
+
+输出:
+    Job id 1, input random no 636, sum of digits 15  
+    Job id 0, input random no 878, sum of digits 23  
+    Job id 9, input random no 150, sum of digits 6  
+    ...
+    total time taken  20.01081009 seconds  </code></pre><h2 id="Select"><a href="#Select" class="headerlink" title="Select"></a>Select</h2><h3 id="什么是select"><a href="#什么是select" class="headerlink" title="什么是select"></a>什么是select</h3><p>select语句用于从多个发送/接收channel运算符中选择<br>select语句会阻塞,直至一个发送/接收运算符准备开始.如果多个运算符已准备,会随机选择其中一个<br>select语句类似于switch语句,除了每个case语句都是一个channel运算符</p>
+<h3 id="Select示例"><a href="#Select示例" class="headerlink" title="Select示例"></a>Select示例</h3><p>一个select示例:</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+    &quot;time&quot;
+)
+
+func server1(ch chan string) {  
+    time.Sleep(6 * time.Second)
+    ch &lt;- &quot;from server1&quot;
+}
+func server2(ch chan string) {  
+    time.Sleep(3 * time.Second)
+    ch &lt;- &quot;from server2&quot;
+
+}
+func main() {  
+    output1 := make(chan string)
+    output2 := make(chan string)
+    go server1(output1)
+    go server2(output2)
+    select {
+    case s1 := &lt;-output1:
+        fmt.Println(s1)
+    case s2 := &lt;-output2:
+        fmt.Println(s2)
+    }
+}
+
+输出:
+    from server2  </code></pre><h3 id="select的实际应用"><a href="#select的实际应用" class="headerlink" title="select的实际应用"></a>select的实际应用</h3><p>设想现实中有大于一台的数据库服务器,一个应用程序接收其信息并且越快越好.这是就需要使用select语句同时等待多个服务器的回复</p>
+<h3 id="Select的默认case"><a href="#Select的默认case" class="headerlink" title="Select的默认case"></a>Select的默认case</h3><p>在select语句中,默认case会在没有其它case准备好时执行<br>使用默认case是为了防止select语句阻塞</p>
+<pre><code>package main
+
+import (  
+    &quot;fmt&quot;
+    &quot;time&quot;
+)
+
+func process(ch chan string) {  
+    time.Sleep(10500 * time.Millisecond)
+    ch &lt;- &quot;process successful&quot;
+}
+
+func main() {  
+    ch := make(chan string)
+    go process(ch)
+    for {
+        time.Sleep(1000 * time.Millisecond)
+        select {
+        case v := &lt;-ch:
+            fmt.Println(&quot;received value: &quot;, v)
+            return
+        default:
+            fmt.Println(&quot;no value received&quot;)
+        }
+    }
+
+}
+
+输出:
+    no value received  
+    no value received  
+    no value received  
+    no value received  
+    no value received  
+    no value received  
+    no value received  
+    no value received  
+    no value received  
+    no value received  
+    received value:  process successful</code></pre><h3 id="死锁和默认case"><a href="#死锁和默认case" class="headerlink" title="死锁和默认case"></a>死锁和默认case</h3><p>如果channel一直处于阻塞状态,那么就会造成死锁</p>
+<pre><code>package main
+
+func main() {  
+    ch := make(chan string)
+    select {
+    case &lt;-ch:
+    }
+}
+
+报错:deadlock</code></pre><p>如果使用默认case,那么deadlock将不会发生</p>
+<pre><code>package main
+
+import &quot;fmt&quot;
+
+func main() {  
+    ch := make(chan string)
+    select {
+    case &lt;-ch:
+    default:
+        fmt.Println(&quot;default case executed&quot;)
+    }
+}
+
+输出:
+    default case executed</code></pre><p>同样的,如果select只有nil的channel,那么默认case也会执行</p>
+<pre><code>package main
+
+import &quot;fmt&quot;
+
+func main() {  
+    var ch chan string
+    select {
+    case v := &lt;-ch:
+        fmt.Println(&quot;received value&quot;, v)
+    default:
+        fmt.Println(&quot;default case executed&quot;)
+
+    }
+}
+
+输出:
+    default case executed</code></pre><h3 id="随机选择"><a href="#随机选择" class="headerlink" title="随机选择"></a>随机选择</h3><p>当select语句的多个case都准备好了,那么它们其中随机的一个将会执行</p>
+<pre><code>func server1(ch chan string) {  
+    ch &lt;- &quot;from server1&quot;
+}
+func server2(ch chan string) {  
+    ch &lt;- &quot;from server2&quot;
+
+}
+func main() {  
+    output1 := make(chan string)
+    output2 := make(chan string)
+    go server1(output1)
+    go server2(output2)
+    time.Sleep(1 * time.Second)
+    select {
+    case s1 := &lt;-output1:
+        fmt.Println(s1)
+    case s2 := &lt;-output2:
+        fmt.Println(s2)
+    }
+}</code></pre><h3 id="杂项-空选择"><a href="#杂项-空选择" class="headerlink" title="杂项:空选择"></a>杂项:空选择</h3><p>示例:空select语句</p>
+<pre><code>package main
+
+func main() {  
+    select {}
+}
+
+报错:deadlock
+
+select语句会阻塞直至其中的一个case被执行,如果没有case语句,那么程序将会发生死锁</code></pre><h2 id="Mutex"><a href="#Mutex" class="headerlink" title="Mutex"></a>Mutex</h2><p>在并发编程中,修改共享资源(如全局变量)的代码不应该同时被多个Goroutine执行</p>
+<p>一个Mutex提供了一个锁机制保证在任何一个时间点,只能有一个Goroutine运行.这样就阻止了资源竞争情况的发生</p>
+<p>Mutex在sync包中,Mutex有两个方法,名为Lock和Unlock<br>任何在Lock和Unlock这两个方法间的代码都只将被一个Goroutine执行</p>
+<pre><code>mutex.Lock()
+x = x + 1
+mutex.Unlock()</code></pre><p>如果一个Goroutine已经拥有锁,若此时一个新的Goroutine想要获得锁,那么新的Goroutine将会被阻塞直至解锁</p>
+<h3 id="竞争情况的程序"><a href="#竞争情况的程序" class="headerlink" title="竞争情况的程序"></a>竞争情况的程序</h3><p>示例</p>
+<pre><code>package main  
+import (  
+    &quot;fmt&quot;
+    &quot;sync&quot;
+    )
+var x  = 0  
+func increment(wg *sync.WaitGroup) {  
+    x = x + 1
+    wg.Done()
+}
+func main() {  
+    var w sync.WaitGroup
+    for i := 0; i &lt; 1000; i++ {
+        w.Add(1)
+        go increment(&amp;w)
+    }
+    w.Wait()
+    fmt.Println(&quot;final value of x&quot;, x)
+}</code></pre><h3 id="使用互斥解决竞争情况"><a href="#使用互斥解决竞争情况" class="headerlink" title="使用互斥解决竞争情况"></a>使用互斥解决竞争情况</h3><p>示例</p>
+<pre><code>package main  
+import (  
+    &quot;fmt&quot;
+    &quot;sync&quot;
+    )
+var x  = 0  
+func increment(wg *sync.WaitGroup, m *sync.Mutex) {  
+    m.Lock()
+    x = x + 1
+    m.Unlock()
+    wg.Done()
+}
+func main() {  
+    var w sync.WaitGroup
+    var m sync.Mutex
+    for i := 0; i &lt; 1000; i++ {
+        w.Add(1)
+        go increment(&amp;w, &amp;m)
+    }
+    w.Wait()
+    fmt.Println(&quot;final value of x&quot;, x)
+}
+
+输出:
+    final value of x 1000</code></pre><h3 id="使用channel解决竞争情况"><a href="#使用channel解决竞争情况" class="headerlink" title="使用channel解决竞争情况"></a>使用channel解决竞争情况</h3><p>也可以使用channel解决资源的竞争情况</p>
+<pre><code>package main  
+import (  
+    &quot;fmt&quot;
+    &quot;sync&quot;
+    )
+var x  = 0  
+func increment(wg *sync.WaitGroup, ch chan bool) {  
+    ch &lt;- true
+    x = x + 1
+    &lt;- ch
+    wg.Done()
+}
+func main() {  
+    var w sync.WaitGroup
+    ch := make(chan bool, 1)
+    for i := 0; i &lt; 1000; i++ {
+        w.Add(1)
+        go increment(&amp;w, ch)
+    }
+    w.Wait()
+    fmt.Println(&quot;final value of x&quot;, x)
+}
+
+输出:
+    final value of x 1000</code></pre><h3 id="Mutex与Channel的比较"><a href="#Mutex与Channel的比较" class="headerlink" title="Mutex与Channel的比较"></a>Mutex与Channel的比较</h3><p>mutex和channel都可以解决竞争情况<br>到底是使用mutex还是channel取决于我们需要解决什么样的问题:绝大多数情况:mutex,Goroutine的交流:channel</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/golang/" rel="tag"><i class="fa fa-tag"></i> golang</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/07/27/%E7%9B%AE%E5%BD%95%E5%A4%8D%E5%88%B6/" rel="prev" title="目录复制">
+      <i class="fa fa-chevron-left"></i> 目录复制
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/07/28/docker%E5%91%BD%E4%BB%A4%E6%95%B4%E7%90%86/" rel="next" title="docker命令整理">
+      docker命令整理 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#变量"><span class="nav-number">1.</span> <span class="nav-text">变量</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是变量"><span class="nav-number">1.1.</span> <span class="nav-text">什么是变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#声明单一变量"><span class="nav-number">1.2.</span> <span class="nav-text">声明单一变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#声明一个带初值的变量"><span class="nav-number">1.3.</span> <span class="nav-text">声明一个带初值的变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#类型推导"><span class="nav-number">1.4.</span> <span class="nav-text">类型推导</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多变量声明"><span class="nav-number">1.5.</span> <span class="nav-text">多变量声明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#简短声明"><span class="nav-number">1.6.</span> <span class="nav-text">简短声明</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#类型"><span class="nav-number">2.</span> <span class="nav-text">类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#bool"><span class="nav-number">2.1.</span> <span class="nav-text">bool</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#有符号整型"><span class="nav-number">2.2.</span> <span class="nav-text">有符号整型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#无符号整型"><span class="nav-number">2.3.</span> <span class="nav-text">无符号整型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#浮点型"><span class="nav-number">2.4.</span> <span class="nav-text">浮点型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#复数类型"><span class="nav-number">2.5.</span> <span class="nav-text">复数类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#其他数字类型"><span class="nav-number">2.6.</span> <span class="nav-text">其他数字类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#string类型"><span class="nav-number">2.7.</span> <span class="nav-text">string类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#类型转换"><span class="nav-number">2.8.</span> <span class="nav-text">类型转换</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#常量"><span class="nav-number">3.</span> <span class="nav-text">常量</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#定义常量"><span class="nav-number">3.1.</span> <span class="nav-text">定义常量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#字符串常量"><span class="nav-number">3.2.</span> <span class="nav-text">字符串常量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#布尔常量"><span class="nav-number">3.3.</span> <span class="nav-text">布尔常量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数值常量"><span class="nav-number">3.4.</span> <span class="nav-text">数值常量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数值表达式"><span class="nav-number">3.5.</span> <span class="nav-text">数值表达式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#函数"><span class="nav-number">4.</span> <span class="nav-text">函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是函数"><span class="nav-number">4.1.</span> <span class="nav-text">什么是函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#函数声明"><span class="nav-number">4.2.</span> <span class="nav-text">函数声明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#函数示例"><span class="nav-number">4.3.</span> <span class="nav-text">函数示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多个返回值"><span class="nav-number">4.4.</span> <span class="nav-text">多个返回值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#命令的返回值"><span class="nav-number">4.5.</span> <span class="nav-text">命令的返回值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#空白标识符"><span class="nav-number">4.6.</span> <span class="nav-text">空白标识符</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#包"><span class="nav-number">5.</span> <span class="nav-text">包</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#main函数和main包"><span class="nav-number">5.1.</span> <span class="nav-text">main函数和main包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建自定义包"><span class="nav-number">5.2.</span> <span class="nav-text">创建自定义包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#导出名称"><span class="nav-number">5.3.</span> <span class="nav-text">导出名称</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#init函数"><span class="nav-number">5.4.</span> <span class="nav-text">init函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#空白标识符的使用"><span class="nav-number">5.5.</span> <span class="nav-text">空白标识符的使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#包的别名"><span class="nav-number">5.6.</span> <span class="nav-text">包的别名</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#if-else语句"><span class="nav-number">6.</span> <span class="nav-text">if_else语句</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#if语句"><span class="nav-number">6.1.</span> <span class="nav-text">if语句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#else组件"><span class="nav-number">6.2.</span> <span class="nav-text">else组件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#可选的statement组件"><span class="nav-number">6.3.</span> <span class="nav-text">可选的statement组件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#杂项"><span class="nav-number">6.4.</span> <span class="nav-text">杂项</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#循环"><span class="nav-number">7.</span> <span class="nav-text">循环</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#for循环语法"><span class="nav-number">7.1.</span> <span class="nav-text">for循环语法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#break"><span class="nav-number">7.2.</span> <span class="nav-text">break</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#continue"><span class="nav-number">7.3.</span> <span class="nav-text">continue</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#更多示例"><span class="nav-number">7.4.</span> <span class="nav-text">更多示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#无限循环"><span class="nav-number">7.5.</span> <span class="nav-text">无限循环</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Switch语句"><span class="nav-number">8.</span> <span class="nav-text">Switch语句</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#默认case"><span class="nav-number">8.1.</span> <span class="nav-text">默认case</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多个表达式的情况"><span class="nav-number">8.2.</span> <span class="nav-text">多个表达式的情况</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#没有表达式的switch"><span class="nav-number">8.3.</span> <span class="nav-text">没有表达式的switch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#fallthrough语句"><span class="nav-number">8.4.</span> <span class="nav-text">fallthrough语句</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Arrays"><span class="nav-number">9.</span> <span class="nav-text">Arrays</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#声明"><span class="nav-number">9.1.</span> <span class="nav-text">声明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数组是值类型"><span class="nav-number">9.2.</span> <span class="nav-text">数组是值类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数组的长度"><span class="nav-number">9.3.</span> <span class="nav-text">数组的长度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多维数组"><span class="nav-number">9.4.</span> <span class="nav-text">多维数组</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Slices"><span class="nav-number">10.</span> <span class="nav-text">Slices</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#创建一个slice"><span class="nav-number">10.1.</span> <span class="nav-text">创建一个slice</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#修改切片"><span class="nav-number">10.2.</span> <span class="nav-text">修改切片</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#切片的长度和容量-capacity"><span class="nav-number">10.3.</span> <span class="nav-text">切片的长度和容量(capacity)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用make函数创建切片"><span class="nav-number">10.4.</span> <span class="nav-text">使用make函数创建切片</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#追加到一个切片"><span class="nav-number">10.5.</span> <span class="nav-text">追加到一个切片</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#把切片传递给函数"><span class="nav-number">10.6.</span> <span class="nav-text">把切片传递给函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多维切片"><span class="nav-number">10.7.</span> <span class="nav-text">多维切片</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内存优化"><span class="nav-number">10.8.</span> <span class="nav-text">内存优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#可变参数函数"><span class="nav-number">11.</span> <span class="nav-text">可变参数函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是可变参数函数"><span class="nav-number">11.1.</span> <span class="nav-text">什么是可变参数函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#语法"><span class="nav-number">11.2.</span> <span class="nav-text">语法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#例子和理解可变参数函数如何工作"><span class="nav-number">11.3.</span> <span class="nav-text">例子和理解可变参数函数如何工作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将一个切片传入可变参数函数"><span class="nav-number">11.4.</span> <span class="nav-text">将一个切片传入可变参数函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#可变参数函数的杂项"><span class="nav-number">11.5.</span> <span class="nav-text">可变参数函数的杂项</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Map"><span class="nav-number">12.</span> <span class="nav-text">Map</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#map是什么"><span class="nav-number">12.1.</span> <span class="nav-text">map是什么</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#如何创建一个map"><span class="nav-number">12.2.</span> <span class="nav-text">如何创建一个map</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#给map添加元素"><span class="nav-number">12.3.</span> <span class="nav-text">给map添加元素</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#访问一个map的元素"><span class="nav-number">12.4.</span> <span class="nav-text">访问一个map的元素</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#删除元素"><span class="nav-number">12.5.</span> <span class="nav-text">删除元素</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#map的长度"><span class="nav-number">12.6.</span> <span class="nav-text">map的长度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#map是引用类型"><span class="nav-number">12.7.</span> <span class="nav-text">map是引用类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#map比较相等"><span class="nav-number">12.8.</span> <span class="nav-text">map比较相等</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#String"><span class="nav-number">13.</span> <span class="nav-text">String</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是string"><span class="nav-number">13.1.</span> <span class="nav-text">什么是string</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获得一个string的个别字节"><span class="nav-number">13.2.</span> <span class="nav-text">获得一个string的个别字节</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rune类型"><span class="nav-number">13.3.</span> <span class="nav-text">rune类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#string的for-range循环"><span class="nav-number">13.4.</span> <span class="nav-text">string的for range循环</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用字节的切片来构造一个string"><span class="nav-number">13.5.</span> <span class="nav-text">使用字节的切片来构造一个string</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#string的长度"><span class="nav-number">13.6.</span> <span class="nav-text">string的长度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#string无法改变"><span class="nav-number">13.7.</span> <span class="nav-text">string无法改变</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pointer"><span class="nav-number">14.</span> <span class="nav-text">Pointer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#声明一个pointer"><span class="nav-number">14.1.</span> <span class="nav-text">声明一个pointer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#空值的pointer"><span class="nav-number">14.2.</span> <span class="nav-text">空值的pointer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解引用一个指针"><span class="nav-number">14.3.</span> <span class="nav-text">解引用一个指针</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#给函数传递指针"><span class="nav-number">14.4.</span> <span class="nav-text">给函数传递指针</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Go不支持指针运算"><span class="nav-number">14.5.</span> <span class="nav-text">Go不支持指针运算</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Structure"><span class="nav-number">15.</span> <span class="nav-text">Structure</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是结构体"><span class="nav-number">15.1.</span> <span class="nav-text">什么是结构体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#声明一个结构体"><span class="nav-number">15.2.</span> <span class="nav-text">声明一个结构体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建命名结构体"><span class="nav-number">15.3.</span> <span class="nav-text">创建命名结构体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建匿名结构体"><span class="nav-number">15.4.</span> <span class="nav-text">创建匿名结构体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#空值的结构体"><span class="nav-number">15.5.</span> <span class="nav-text">空值的结构体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#结构体指针"><span class="nav-number">15.6.</span> <span class="nav-text">结构体指针</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#匿名字段"><span class="nav-number">15.7.</span> <span class="nav-text">匿名字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#嵌套结构体"><span class="nav-number">15.8.</span> <span class="nav-text">嵌套结构体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#提升字段"><span class="nav-number">15.9.</span> <span class="nav-text">提升字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#导出的结构体和字段"><span class="nav-number">15.10.</span> <span class="nav-text">导出的结构体和字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#比较结构体"><span class="nav-number">15.11.</span> <span class="nav-text">比较结构体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tag"><span class="nav-number">15.12.</span> <span class="nav-text">tag</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Method"><span class="nav-number">16.</span> <span class="nav-text">Method</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是方法"><span class="nav-number">16.1.</span> <span class="nav-text">什么是方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#方法示例"><span class="nav-number">16.2.</span> <span class="nav-text">方法示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为何用方法"><span class="nav-number">16.3.</span> <span class="nav-text">为何用方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#指针接收器和值接收器的比较"><span class="nav-number">16.4.</span> <span class="nav-text">指针接收器和值接收器的比较</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#何时使用指针接收器与值接收器"><span class="nav-number">16.5.</span> <span class="nav-text">何时使用指针接收器与值接收器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#匿名字段的方法"><span class="nav-number">16.6.</span> <span class="nav-text">匿名字段的方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#方法中的值接收器和函数中的参数的比较"><span class="nav-number">16.7.</span> <span class="nav-text">方法中的值接收器和函数中的参数的比较</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#方法中的指针接收器和函数中的指针参数的比较"><span class="nav-number">16.8.</span> <span class="nav-text">方法中的指针接收器和函数中的指针参数的比较</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#非结构类型的方法"><span class="nav-number">16.9.</span> <span class="nav-text">非结构类型的方法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Interface"><span class="nav-number">17.</span> <span class="nav-text">Interface</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是接口"><span class="nav-number">17.1.</span> <span class="nav-text">什么是接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#声明和实施一个接口"><span class="nav-number">17.2.</span> <span class="nav-text">声明和实施一个接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#接口的实际用处"><span class="nav-number">17.3.</span> <span class="nav-text">接口的实际用处</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#接口的内部表示"><span class="nav-number">17.4.</span> <span class="nav-text">接口的内部表示</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#空接口"><span class="nav-number">17.5.</span> <span class="nav-text">空接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#类型断言"><span class="nav-number">17.6.</span> <span class="nav-text">类型断言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#类型交换"><span class="nav-number">17.7.</span> <span class="nav-text">类型交换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实施接口比较-指针接收器和值接收器"><span class="nav-number">17.8.</span> <span class="nav-text">实施接口比较:指针接收器和值接收器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实施多种接口"><span class="nav-number">17.9.</span> <span class="nav-text">实施多种接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#嵌入接口"><span class="nav-number">17.10.</span> <span class="nav-text">嵌入接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#接口的空值"><span class="nav-number">17.11.</span> <span class="nav-text">接口的空值</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction-to-Concurrency"><span class="nav-number">18.</span> <span class="nav-text">Introduction to Concurrency</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是并发"><span class="nav-number">18.1.</span> <span class="nav-text">什么是并发</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是并行"><span class="nav-number">18.2.</span> <span class="nav-text">什么是并行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#并发性和并行性-从技术观点"><span class="nav-number">18.3.</span> <span class="nav-text">并发性和并行性-从技术观点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#在Go中并发的支持"><span class="nav-number">18.4.</span> <span class="nav-text">在Go中并发的支持</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Goroutine"><span class="nav-number">19.</span> <span class="nav-text">Goroutine</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是Goroutine"><span class="nav-number">19.1.</span> <span class="nav-text">什么是Goroutine</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#比起线程来说-Goroutine的优点"><span class="nav-number">19.2.</span> <span class="nav-text">比起线程来说,Goroutine的优点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#如何开始一个goroutine"><span class="nav-number">19.3.</span> <span class="nav-text">如何开始一个goroutine</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#开始多个Goroutine"><span class="nav-number">19.4.</span> <span class="nav-text">开始多个Goroutine</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Channel"><span class="nav-number">20.</span> <span class="nav-text">Channel</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是channel"><span class="nav-number">20.1.</span> <span class="nav-text">什么是channel</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#声明channel"><span class="nav-number">20.2.</span> <span class="nav-text">声明channel</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从channel发送和接收数据"><span class="nav-number">20.3.</span> <span class="nav-text">从channel发送和接收数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#发送和接收默认是阻塞的"><span class="nav-number">20.4.</span> <span class="nav-text">发送和接收默认是阻塞的</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#channel示例程序"><span class="nav-number">20.5.</span> <span class="nav-text">channel示例程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#channel的其它例子"><span class="nav-number">20.6.</span> <span class="nav-text">channel的其它例子</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#死锁"><span class="nav-number">20.7.</span> <span class="nav-text">死锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#单向channel"><span class="nav-number">20.8.</span> <span class="nav-text">单向channel</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#关闭channel和channel的for-range循环"><span class="nav-number">20.9.</span> <span class="nav-text">关闭channel和channel的for_range循环</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Buffered-Channel"><span class="nav-number">21.</span> <span class="nav-text">Buffered Channel</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是缓冲channel"><span class="nav-number">21.1.</span> <span class="nav-text">什么是缓冲channel</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#示例"><span class="nav-number">21.2.</span> <span class="nav-text">示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#另一个示例"><span class="nav-number">21.3.</span> <span class="nav-text">另一个示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#缓冲channel的死锁"><span class="nav-number">21.4.</span> <span class="nav-text">缓冲channel的死锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#缓冲channel的长度与容量"><span class="nav-number">21.5.</span> <span class="nav-text">缓冲channel的长度与容量</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Worker-Pool"><span class="nav-number">22.</span> <span class="nav-text">Worker Pool</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#WaitGroup"><span class="nav-number">22.1.</span> <span class="nav-text">WaitGroup</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实施工作池"><span class="nav-number">22.2.</span> <span class="nav-text">实施工作池</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Select"><span class="nav-number">23.</span> <span class="nav-text">Select</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是select"><span class="nav-number">23.1.</span> <span class="nav-text">什么是select</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Select示例"><span class="nav-number">23.2.</span> <span class="nav-text">Select示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#select的实际应用"><span class="nav-number">23.3.</span> <span class="nav-text">select的实际应用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Select的默认case"><span class="nav-number">23.4.</span> <span class="nav-text">Select的默认case</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#死锁和默认case"><span class="nav-number">23.5.</span> <span class="nav-text">死锁和默认case</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#随机选择"><span class="nav-number">23.6.</span> <span class="nav-text">随机选择</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#杂项-空选择"><span class="nav-number">23.7.</span> <span class="nav-text">杂项:空选择</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Mutex"><span class="nav-number">24.</span> <span class="nav-text">Mutex</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#竞争情况的程序"><span class="nav-number">24.1.</span> <span class="nav-text">竞争情况的程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用互斥解决竞争情况"><span class="nav-number">24.2.</span> <span class="nav-text">使用互斥解决竞争情况</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用channel解决竞争情况"><span class="nav-number">24.3.</span> <span class="nav-text">使用channel解决竞争情况</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Mutex与Channel的比较"><span class="nav-number">24.4.</span> <span class="nav-text">Mutex与Channel的比较</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="这些天我亲戚来我家,家里只有一个老旧的联想昭阳笔记本,装的Ubuntu系统,玩不了游戏.我告诉我亲戚只有windows系统才能玩游戏,然后让他自己重装系统(其实就没指望他能弄好),没想到他在格式化硬盘那一步把整个硬盘格式化了-.- 一般来说我们重装系统都是使用一个U盘,安装好系统安装程序,然后从U盘启动安装.那么问题来了,如何给一个没有系统的笔记本装系统,也没有U盘?我最后想到的是PXE PXE简">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用cobbler进行网络装机">
+<meta property="og:url" content="https://staight.github.io/2018/07/21/%E4%BD%BF%E7%94%A8cobbler%E8%BF%9B%E8%A1%8C%E7%BD%91%E7%BB%9C%E8%A3%85%E6%9C%BA/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="这些天我亲戚来我家,家里只有一个老旧的联想昭阳笔记本,装的Ubuntu系统,玩不了游戏.我告诉我亲戚只有windows系统才能玩游戏,然后让他自己重装系统(其实就没指望他能弄好),没想到他在格式化硬盘那一步把整个硬盘格式化了-.- 一般来说我们重装系统都是使用一个U盘,安装好系统安装程序,然后从U盘启动安装.那么问题来了,如何给一个没有系统的笔记本装系统,也没有U盘?我最后想到的是PXE PXE简">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://staight.github.io/2018/07/21/%E4%BD%BF%E7%94%A8cobbler%E8%BF%9B%E8%A1%8C%E7%BD%91%E7%BB%9C%E8%A3%85%E6%9C%BA/PXE%E6%B5%81%E7%A8%8B.png">
+<meta property="article:published_time" content="2018-07-21T07:06:48.000Z">
+<meta property="article:modified_time" content="2019-10-02T17:49:50.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="运维">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://staight.github.io/2018/07/21/%E4%BD%BF%E7%94%A8cobbler%E8%BF%9B%E8%A1%8C%E7%BD%91%E7%BB%9C%E8%A3%85%E6%9C%BA/PXE%E6%B5%81%E7%A8%8B.png">
+
+<link rel="canonical" href="https://staight.github.io/2018/07/21/%E4%BD%BF%E7%94%A8cobbler%E8%BF%9B%E8%A1%8C%E7%BD%91%E7%BB%9C%E8%A3%85%E6%9C%BA/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>使用cobbler进行网络装机 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2018/07/21/%E4%BD%BF%E7%94%A8cobbler%E8%BF%9B%E8%A1%8C%E7%BD%91%E7%BB%9C%E8%A3%85%E6%9C%BA/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          使用cobbler进行网络装机
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-07-21 15:06:48" itemprop="dateCreated datePublished" datetime="2018-07-21T15:06:48+08:00">2018-07-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-03 01:49:50" itemprop="dateModified" datetime="2019-10-03T01:49:50+08:00">2019-10-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这些天我亲戚来我家,家里只有一个老旧的联想昭阳笔记本,装的Ubuntu系统,玩不了游戏.我告诉我亲戚只有windows系统才能玩游戏,然后让他自己重装系统(其实就没指望他能弄好),没想到他在格式化硬盘那一步把整个硬盘格式化了-.-</p>
+<p>一般来说我们重装系统都是使用一个U盘,安装好系统安装程序,然后从U盘启动安装.那么问题来了,如何给一个没有系统的笔记本装系统,也没有U盘?我最后想到的是PXE</p>
+<h2 id="PXE简介"><a href="#PXE简介" class="headerlink" title="PXE简介"></a>PXE简介</h2><p>PXE的全称是预启动执行环境(preboot execute environment),也就是人们常说的网络装机.</p>
+<p>PXE的优点:</p>
+<ul>
+<li>规模化:同时装配多台主机</li>
+<li>自动化:自动装系统,以及配置各种服务</li>
+<li>远程实现:不需要光盘,U盘等物理安装介质</li>
+</ul>
+<p>PXE的工作模式:</p>
+<ol>
+<li>PXE client集成在网卡的启动芯片中</li>
+<li>当计算机引导时,从网卡芯片中把PXE client调入内容执行,获取PXE server配置,显示菜单,根据用户选择将远程引导程序下载到本机运行</li>
+</ol>
+<p>PXE所需要的组件:</p>
+<ul>
+<li>DHCP服务:分配IP地址,定位引导程序</li>
+<li>TFTP服务:提供引导程序的下载</li>
+<li>HTTP(或FTP/NFS)服务:提供系统安装文件的下载</li>
+</ul>
+<p>PXE的工作过程:</p>
+<p><img src="PXE%E6%B5%81%E7%A8%8B.png" alt="PXE流程"></p>
+<ol>
+<li><p>PXE Client从自己的PXE网卡启动,向本网络中的DHCP服务器索取IP</p>
+</li>
+<li><p>DHCP服务器返回分配给客户机的IP以及PXE文件的放置位置(该文件一般是放在一台TFTP服务器上)</p>
+</li>
+<li><p>PXE Client向本网络中的TFTP服务器索取pxelinux.0文件</p>
+</li>
+<li><p>PXE Client取得pxelinux.0文件后之执行该文件</p>
+</li>
+<li><p>根据pxelinux.0的执行结果,通过TFTP服务器加载内核和文件系统</p>
+</li>
+<li><p>进入安装画面,此时可以通过选择HTTP,FTP,NFS方式之一进行安装</p>
+</li>
+</ol>
+<h2 id="cobbler简介"><a href="#cobbler简介" class="headerlink" title="cobbler简介"></a>cobbler简介</h2><p>Cobbler是一个Linux服务器安装的服务,可以通过网络启动(PXE)的方式来快速安装,重装物理服务器和虚拟机,同时还可以管理DHCP,DNS等.Cobbler由python开发</p>
+<p>cobbler官网:<a href="http://cobbler.github.io" target="_blank" rel="noopener">http://cobbler.github.io</a></p>
+<p>cobbler集成的服务:</p>
+<ul>
+<li><p>PXE服务支持</p>
+</li>
+<li><p>DHCP服务管理</p>
+</li>
+<li><p>DNS服务管理(可选bind,dnsmasq)</p>
+</li>
+<li><p>电源管理</p>
+</li>
+<li><p>Kickstart服务支持</p>
+</li>
+<li><p>YUM仓库管理</p>
+</li>
+<li><p>TFTP(PXE启动时需要)</p>
+</li>
+<li><p>Apache(提供kickstart的安装源,并提供定制化的kickstart配置)</p>
+</li>
+</ul>
+<p>可以看出,cobbler将各种服务集成在一起,而其自己本身是不做事的…它存在的意义就是让原本复杂的安装步骤变得简便</p>
+<h2 id="cobbler使用"><a href="#cobbler使用" class="headerlink" title="cobbler使用"></a>cobbler使用</h2><p>具体步骤不想发了…官网和网上的博客上都有,这里说一下几个注意事项</p>
+<ol>
+<li><p>PXE client和PXE server只需要在同一子网下就行了,原本我以为PXE server必须是网关…但这里有一个问题:如果PXE server不是网关,那么同一子网就有两个DHCP服务器了,要是PXE client从路由器那获得IP,那岂不获得不了tftp服务器位置了?</p>
+</li>
+<li><p>cobbler仅支持Linux服务器的安装!!!我…开始的时候装deepin失败了,后来装ubuntu桌面版又失败了,最后装ubuntu服务器版才成功,查了文档才发现只能装服务器的Linux版本???不过听说经过修改后,可以安装桌面版甚至是windows…</p>
+<p> 如果cobbler import xxx报这个错,就很可能是选择的镜像不对了….</p>
+<pre><code>No distros imported, bailing out</code></pre></li>
+</ol>
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p>David_Tang的博客(CentOS 6.4下PXE+Kickstart无人值守安装操作系统):<a href="http://www.cnblogs.com/mchina/p/centos-pxe-kickstart-auto-install-os.html" target="_blank" rel="noopener">http://www.cnblogs.com/mchina/p/centos-pxe-kickstart-auto-install-os.html</a></p>
+<p>惨绿少年的博客(使用cobbler批量安装操作系统(基于Centos7.x )):<a href="https://blog.csdn.net/admin_root1/article/details/78911718" target="_blank" rel="noopener">https://blog.csdn.net/admin_root1/article/details/78911718</a></p>
+<p>cobbler官网的文档:<a href="http://cobbler.github.io/manuals/quickstart/" target="_blank" rel="noopener">http://cobbler.github.io/manuals/quickstart/</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E8%BF%90%E7%BB%B4/" rel="tag"><i class="fa fa-tag"></i> 运维</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/07/17/leetcodeDay6/" rel="prev" title="leetcodeDay6">
+      <i class="fa fa-chevron-left"></i> leetcodeDay6
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/07/23/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E9%9A%8F%E7%AC%94/" rel="next" title="渗透测试随笔">
+      渗透测试随笔 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#PXE简介"><span class="nav-number">1.</span> <span class="nav-text">PXE简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cobbler简介"><span class="nav-number">2.</span> <span class="nav-text">cobbler简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cobbler使用"><span class="nav-number">3.</span> <span class="nav-text">cobbler使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档"><span class="nav-number">4.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

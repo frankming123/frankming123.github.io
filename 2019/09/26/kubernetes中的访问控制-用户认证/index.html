@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="工作时遇到了如何在容器服务中添加用户，管理单独的namespace的问题，经过一番研究，在此记录下来。 在k8s中，客户端对API Server访问的大体流程如下：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubernetes中的访问控制-用户认证">
+<meta property="og:url" content="https://staight.github.io/2019/09/26/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="工作时遇到了如何在容器服务中添加用户，管理单独的namespace的问题，经过一番研究，在此记录下来。 在k8s中，客户端对API Server访问的大体流程如下：">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://staight.github.io/2019/09/26/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81/apiserver%E8%AE%BF%E9%97%AE%E6%B5%81%E7%A8%8B.png">
+<meta property="og:image" content="https://staight.github.io/2019/09/26/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81/kubeconfig%E7%BB%93%E6%9E%84.png">
+<meta property="article:published_time" content="2019-09-26T08:06:34.000Z">
+<meta property="article:modified_time" content="2019-10-02T17:49:50.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="容器">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://staight.github.io/2019/09/26/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81/apiserver%E8%AE%BF%E9%97%AE%E6%B5%81%E7%A8%8B.png">
+
+<link rel="canonical" href="https://staight.github.io/2019/09/26/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>kubernetes中的访问控制-用户认证 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2019/09/26/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          kubernetes中的访问控制-用户认证
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-09-26 16:06:34" itemprop="dateCreated datePublished" datetime="2019-09-26T16:06:34+08:00">2019-09-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-03 01:49:50" itemprop="dateModified" datetime="2019-10-03T01:49:50+08:00">2019-10-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>工作时遇到了如何在容器服务中添加用户，管理单独的namespace的问题，经过一番研究，在此记录下来。</p>
+<p>在k8s中，客户端对API Server访问的大体流程如下：</p>
+<p><img src="apiserver%E8%AE%BF%E9%97%AE%E6%B5%81%E7%A8%8B.png" alt="apiserver访问流程"></p>
+<p>那么，这篇主要讲讲访问控制的第一步：用户认证。</p>
+<hr>
+<h2 id="用户简介"><a href="#用户简介" class="headerlink" title="用户简介"></a>用户简介</h2><p>在k8s中，用户具有如下基础属性：</p>
+<ul>
+<li>用户名：标识用户的字符串</li>
+<li>UID：标识用户的数字</li>
+<li>组：即用户组，包含若干个用户</li>
+<li>额外字段：其他信息</li>
+</ul>
+<p>看起来和Linux中的系统用户一模一样。。。不过基本上只需要关心用户名。</p>
+<hr>
+<h2 id="用户分类"><a href="#用户分类" class="headerlink" title="用户分类"></a>用户分类</h2><p>在Kubernetes中，用户分为两类：</p>
+<ul>
+<li>普通用户（normal user）：为Pod外的程序设计，比如说kubectl命令。</li>
+<li>service account：为Pod设计，方便Pod调用Kubernetes API。</li>
+</ul>
+<p>这两类用户本质上并没有区别，只是service account的用户名类似于<code>system:serviceaccount:test:default</code>，表示在test命名空间的叫做default的用户。</p>
+<hr>
+<h2 id="认证策略"><a href="#认证策略" class="headerlink" title="认证策略"></a>认证策略</h2><p>当然不能直接输入用户名就可以访问集群的各个资源，k8s主要有如下几种认证策略：</p>
+<ul>
+<li>HTTP基本身份认证</li>
+<li>bearer token认证</li>
+<li>客户端证书认证</li>
+<li>Service Account Token认证</li>
+</ul>
+<p>其中HTTP基本身份认证和bearer token认证要求在apiserver启动前生成，而客户端证书认证和Service Account Token认证则可以动态生成。</p>
+<p>除这些认证方式以外，还有其他的认证方式，如Keystone密码，Webhook Token认证等等，这里不做赘述。</p>
+<h3 id="HTTP基本身份认证"><a href="#HTTP基本身份认证" class="headerlink" title="HTTP基本身份认证"></a>HTTP基本身份认证</h3><p>HTTP基本身份认证即是用户名/密码认证，这种认证要求apiserver启动时添加参数：<code>--basic-auth-file=AUTHFILE</code>。</p>
+<p>AUTHFILE文件格式如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">password,user,uid,&quot;group1,group2,group3&quot;</span><br></pre></td></tr></table></figure>
+
+<p>每一行都是一个用户，第四列的group可选。</p>
+<p>HTTP客户端可以在header中添加<code>Authorization: Basic BASE64ENCODED(USER:PASSWORD)</code>来进行HTTP基本身份认证，<code>BASE64ENCODED(USER:PASSWORD)</code>是<code>USER:PASSWORD</code>的base64值。apiserver收到后会根据AUTHFILE判断用户名和密码是否正确。</p>
+<p>示例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 .kube]# echo &#39;admin:123456&#39; | base64</span><br><span class="line">YWRtaW46MTIzNDU2Cg&#x3D;&#x3D;</span><br><span class="line">[root@node1 .kube]# curl -k -XGET  -H &quot;Authorization: Basic YWRtaW46MTIzNDU2Cg&#x3D;&#x3D;&quot; &#39;https:&#x2F;&#x2F;169.254.128.15:60002&#x2F;api&#39;</span><br><span class="line">&#123;</span><br><span class="line">  &quot;kind&quot;: &quot;Status&quot;,</span><br><span class="line">  &quot;apiVersion&quot;: &quot;v1&quot;,</span><br><span class="line">  &quot;metadata&quot;: &#123;</span><br><span class="line">    </span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;status&quot;: &quot;Failure&quot;,</span><br><span class="line">  &quot;message&quot;: &quot;Unauthorized&quot;,</span><br><span class="line">  &quot;reason&quot;: &quot;Unauthorized&quot;,</span><br><span class="line">  &quot;code&quot;: 401</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>尝试使用用户名为admin，密码为123456进行认证，但因认证失败，被apiserver拒绝。</p>
+<h3 id="bearer-token认证"><a href="#bearer-token认证" class="headerlink" title="bearer token认证"></a>bearer token认证</h3><p>bearer token认证是静止token认证，这种认证要求apiserver启动时添加参数：<code>--token-auth-file=AUTHFILE</code>。</p>
+<p>bearer token认证和HTTP基本身份认证类似，只是HTTP请求时需要的用户名和密码变成token了而已。</p>
+<p>AUTHFILE文件格式如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">token,user,uid,&quot;group1,group2,group3&quot;</span><br></pre></td></tr></table></figure>
+
+<p>每一行都是一个用户，第四列的group可选。</p>
+<p>HTTP客户端可以在header中添加<code>Authorization: Bearer TOKEN</code>来进行HTTP基本身份认证，<code>TOKEN</code>就是需要发送的token。apiserver收到后会根据AUTHFILE查找是否有符合的用户。</p>
+<p>示例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 .kube]#  curl -k -XGET  -H &quot;Authorization: Bearer 275gX5MPWpNWYsHHoUePEFIvxo4uWAEs&quot; &#39;https:&#x2F;&#x2F;169.254.128.15:60002&#x2F;api&#39;</span><br><span class="line">&#123;</span><br><span class="line">  &quot;kind&quot;: &quot;APIVersions&quot;,</span><br><span class="line">  &quot;versions&quot;: [</span><br><span class="line">    &quot;v1&quot;</span><br><span class="line">  ],</span><br><span class="line">  &quot;serverAddressByClientCIDRs&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;clientCIDR&quot;: &quot;0.0.0.0&#x2F;0&quot;,</span><br><span class="line">      &quot;serverAddress&quot;: &quot;cls-qv3z2icb.ccs.tencent-cloud.com:60002&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>认证成功，该token是我主用户的token，已经记录在master的AUTHFILE中。</p>
+<h3 id="客户端证书认证"><a href="#客户端证书认证" class="headerlink" title="客户端证书认证"></a>客户端证书认证</h3><p>客户端证书认证是基于x509的HTTPS证书认证，这种认证要求apiserver启动时添加参数：<code>--client-ca-file=CAFILE</code>。</p>
+<p>CAFILE是一个或多个证书颁发机构的证书，用来验证提交给apiserver的客户端证书是否合法。检查后，使用客户端证书的CN（Common Name）作为请求的用户名，使用O（Origanization）作为组。</p>
+<p>客户端证书的生成需要CA证书和CA私钥的参与，示例：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /etc/kubernetes/pki</span><br><span class="line">(<span class="built_in">umask</span> 077; openssl genrsa -out testuser.key 2048)</span><br><span class="line">openssl req -new -key testuser.key -out testuser.csr -subj <span class="string">"/CN=testuser/</span></span><br><span class="line"><span class="string">O=kubeusers"</span></span><br><span class="line">openssl x509 -req -<span class="keyword">in</span> testuser.csr -CA ca.crt -CAkey ca.key \</span><br><span class="line">-CAcreateserial -out testuser.crt -days 3650</span><br></pre></td></tr></table></figure>
+
+<p>HTTP客户端可通过生成的<code>testuser.key</code>和<code>testuesr.crt</code>和apiserver通信。</p>
+<p>需要注意的是，使用客户端证书认证方式不需要apiserver预定用户列表，客户端证书中的用户均是合法用户。也就是说，使用客户端证书认证可以动态添加用户。</p>
+<h3 id="Service-Account-Token"><a href="#Service-Account-Token" class="headerlink" title="Service Account Token"></a>Service Account Token</h3><p>Service Account Token是service account专用的认证方式，类似于bearer token认证。</p>
+<p>并不需要手动创建Service Account Token，在创建service account时，会自动在当前命名空间创建一个secret资源，其中包含了一个token，就是Service Account Token。</p>
+<p>示例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 .kube]# kubectl create serviceaccount test -n test</span><br><span class="line">serviceaccount&#x2F;test created </span><br><span class="line">[root@node1 .kube]# kubectl get secret -n test</span><br><span class="line">NAME                  TYPE                                  DATA   AGE</span><br><span class="line">default-token-s858v   kubernetes.io&#x2F;service-account-token   3      4h5m</span><br><span class="line">test-token-bjf5m      kubernetes.io&#x2F;service-account-token   3      23s</span><br><span class="line">[root@node1 .kube]# kubectl describe secret test-token-bjf5m -n test</span><br><span class="line">Name:         test-token-bjf5m</span><br><span class="line">Namespace:    test</span><br><span class="line">Labels:       &lt;none&gt;</span><br><span class="line">Annotations:  kubernetes.io&#x2F;service-account.name: test</span><br><span class="line">              kubernetes.io&#x2F;service-account.uid: cf58ab12-e04b-11e9-9cc4-0a4ad8794143</span><br><span class="line"></span><br><span class="line">Type:  kubernetes.io&#x2F;service-account-token</span><br><span class="line"></span><br><span class="line">Data</span><br><span class="line">&#x3D;&#x3D;&#x3D;&#x3D;</span><br><span class="line">namespace:  4 bytes</span><br><span class="line">token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJ0ZXN0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6InRlc3QtdG9rZW4tYmpmNW0iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoidGVzdCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImNmNThhYjEyLWUwNGItMTFlOS05Y2M0LTBhNGFkODc5NDE0MyIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDp0ZXN0OnRlc3QifQ.QvyZOBEdTe9T46bthsWn1Jn4GJ_n8wQhv8M2o_9jpd8gVe2JrFBfpT4BTasbVjOiGva7JA-uMmI2MdqxTLHZZ2ZRso9sNOleAW0m3WdYsjlgXQ_65XIHC_hrlZ8XjAmJfKYhcwoQX1kbVoaHBNYbHXc3qXygT0RVlnzfzhBX_DTbnNiabpE-RXEnBKaU_5U9py7s7fU9E1E4m9k_np_MbI-EBgDAGVdYUXT0OrLB1oABB9DCkYCMr_BJXj0pAztkznVsNWPZoVBqnOKGEXhQVJB8j3FRbmO1DaCD_mkhPeiI285nZ5Yn63rI396AelZZNKNA3WKArNTMIBpTdZE51g</span><br><span class="line">ca.crt:     1025 bytes</span><br></pre></td></tr></table></figure>
+
+<p>service account使用该token进行验证，其用户名为<code>system:serviceaccount:(NAMESPACE):(SERVICEACCOUNT)</code>，被指定到组<code>system:serviceaccounts</code>和<code>system:serviceaccounts:(NAMESPACE)</code>。</p>
+<p>Service Account Token的认证方式也不需要apiserver有预定用户表，可以在运行过程中动态添加service account。</p>
+<p>另外，Service Account Token中的token是JWT（JSON Web Token），感兴趣的可以看看这篇文章：<a href="http://www.ruanyifeng.com/blog/2018/07/json_web_token-tutorial.html" target="_blank" rel="noopener">http://www.ruanyifeng.com/blog/2018/07/json_web_token-tutorial.html</a>。</p>
+<hr>
+<h2 id="kubectl的认证方式"><a href="#kubectl的认证方式" class="headerlink" title="kubectl的认证方式"></a>kubectl的认证方式</h2><p>kubectl命令支持如上所有认证方式，其通过kubeconfig配置文件来存储和apiserver的通信方式以及认证所需要的数据，该文件往往存储于<code>~/.kube/config</code>中。</p>
+<p>kubeconfig文件结构：</p>
+<p><img src="kubeconfig%E7%BB%93%E6%9E%84.png" alt="kubeconfig结构"></p>
+<p>如图，该文件主要包含了如下几项：</p>
+<ul>
+<li>clusters: 集群列表，包含访问API Server的URL和所属集群的名称等。</li>
+<li>users：用户列表，包含访问API Server时的用户名和认证信息。</li>
+<li>contexts：kubelet的可用上下文列表，由用户列表中的某特定用户名称和集群列表中的某特定集群名称组合而成。</li>
+<li>current-context：kubelet当前使用的上下文名称，即上下文列表中的某个特定项。</li>
+</ul>
+<p>kubeconfig文件示例：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">clusters:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">cluster:</span></span><br><span class="line">    <span class="attr">certificate-authority-data:</span> <span class="string">集群CA证书的base64值</span></span><br><span class="line">    <span class="attr">server:</span> <span class="string">https://169.254.128.15:60002</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">kubernetes</span></span><br><span class="line"><span class="attr">contexts:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">context:</span></span><br><span class="line">    <span class="attr">cluster:</span> <span class="string">kubernetes</span></span><br><span class="line">    <span class="attr">namespace:</span> <span class="string">test</span></span><br><span class="line">    <span class="attr">user:</span> <span class="string">test</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">kubernetes</span></span><br><span class="line"><span class="attr">current-context:</span> <span class="string">kubernetes</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Config</span></span><br><span class="line"><span class="attr">preferences:</span> <span class="string">&#123;&#125;</span></span><br><span class="line"><span class="attr">users:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">test</span></span><br><span class="line">  <span class="attr">user:</span></span><br><span class="line">    <span class="attr">token:</span> <span class="string">token值</span></span><br></pre></td></tr></table></figure>
+
+<p>该文件定义了名为kubernetes的cluster，名为test的user，名为kubernetes的context将cluster和user组合起来，最后当前使用的是名为kubernetes的context。</p>
+<p>除了token外，还可以添加<code>client-certificate-data</code>和<code>client-key-data</code>字段表示使用客户端证书认证方式；添加<code>username</code>和<code>password</code>字段表示使用HTTP基本身份认证。</p>
+<p>此外，kubectl提供了config子命令执行对kubeconfig相关的操作，比如<code>kubectl config view</code>查看当前使用的kubeconfig。</p>
+<hr>
+<h2 id="kubectl使用Service-Account-Token"><a href="#kubectl使用Service-Account-Token" class="headerlink" title="kubectl使用Service Account Token"></a>kubectl使用Service Account Token</h2><p>看到这里，是不是有个疑问：Service Account Token是Service Account的通信方式，kubectl这个外部程序怎么使用？</p>
+<p>然而经测试后确实能够使用。。。这反而说明了普通用户和service account本质上并没有区别。</p>
+<p>实现方式很简单：</p>
+<ol>
+<li>创建一个service account</li>
+<li>查看该service account对应的secret，找到token</li>
+<li>将找到的token放到kubeconfig配置文件中</li>
+<li>使用kubectl命令测试，即可实现。</li>
+</ol>
+<p>那么，尝试看看呢：</p>
+<p>创建service account，查找token的步骤在之前已实现：<a href="#service-account-token">Service Account Token认证</a>。该步骤创建了serviceaccount/test，以及secret/test-token-bjf5m。</p>
+<p>接下来，将<code>~/.kube/config</code>文件拷贝一份，将其token字段替换为<code>secret/test-token-bjf5m</code>的token。</p>
+<p>最后，使用kubectl命令测试：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 .kube]# kubectl get pod</span><br><span class="line">Error from server (Forbidden): pods is forbidden: User &quot;system:serviceaccount:test:test&quot; cannot list resource &quot;pods&quot; in API group &quot;&quot; in the namespace &quot;test&quot;</span><br></pre></td></tr></table></figure>
+
+<p>报错<code>system:serviceaccount:test:test</code>无权限，说明成功切换至test命名空间的名为test的service account，测试成功~</p>
+<p>光是切换用户不行，还需要为该用户添加权限，该功能需要涉及k8s的权限控制功能，将在下一篇中讲解。</p>
+<hr>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><ul>
+<li>k8s中的用户分为两类，分别为普通用户和service account。</li>
+<li>k8s分为多种用户认证策略，包括HTTP基本身份认证，bearer token认证，客户端证书认证，Service Account Token认证等等</li>
+<li>kubectl命令使用kubeconfig配置文件来完成对apiserver的通信，其中包含了通信方式和认证信息。</li>
+</ul>
+<hr>
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p>Kubernetes 中的用户与身份认证授权：<a href="https://jimmysong.io/kubernetes-handbook/guide/authentication.html" target="_blank" rel="noopener">https://jimmysong.io/kubernetes-handbook/guide/authentication.html</a></p>
+<p>kubernetes 中 kubeconfig 的用法：<a href="https://www.jianshu.com/p/99853cac56b8" target="_blank" rel="noopener">https://www.jianshu.com/p/99853cac56b8</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E5%AE%B9%E5%99%A8/" rel="tag"><i class="fa fa-tag"></i> 容器</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/09/25/%E6%B7%B1%E5%85%A5deployment%E5%9B%9E%E6%BB%9A%E6%9C%BA%E5%88%B6/" rel="prev" title="深入deployment回滚机制">
+      <i class="fa fa-chevron-left"></i> 深入deployment回滚机制
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/09/27/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E6%9D%83%E9%99%90%E6%8E%88%E4%BA%88/" rel="next" title="kubernetes中的访问控制-权限授予">
+      kubernetes中的访问控制-权限授予 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#用户简介"><span class="nav-number">1.</span> <span class="nav-text">用户简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#用户分类"><span class="nav-number">2.</span> <span class="nav-text">用户分类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#认证策略"><span class="nav-number">3.</span> <span class="nav-text">认证策略</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#HTTP基本身份认证"><span class="nav-number">3.1.</span> <span class="nav-text">HTTP基本身份认证</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bearer-token认证"><span class="nav-number">3.2.</span> <span class="nav-text">bearer token认证</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#客户端证书认证"><span class="nav-number">3.3.</span> <span class="nav-text">客户端证书认证</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Service-Account-Token"><span class="nav-number">3.4.</span> <span class="nav-text">Service Account Token</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kubectl的认证方式"><span class="nav-number">4.</span> <span class="nav-text">kubectl的认证方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kubectl使用Service-Account-Token"><span class="nav-number">5.</span> <span class="nav-text">kubectl使用Service Account Token</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">6.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档"><span class="nav-number">7.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

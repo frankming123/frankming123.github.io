@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="前一篇文章讲解了i3的基础使用,而这一篇的主要内容则是将i3”桌面化” 字体修改更改i3的title和bar字体">
+<meta property="og:type" content="article">
+<meta property="og:title" content="i3使用进阶">
+<meta property="og:url" content="https://staight.github.io/2018/09/29/i3%E4%BD%BF%E7%94%A8%E8%BF%9B%E9%98%B6/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="前一篇文章讲解了i3的基础使用,而这一篇的主要内容则是将i3”桌面化” 字体修改更改i3的title和bar字体">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-09-29T03:53:29.000Z">
+<meta property="article:modified_time" content="2019-10-02T17:49:50.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="杂项">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://staight.github.io/2018/09/29/i3%E4%BD%BF%E7%94%A8%E8%BF%9B%E9%98%B6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>i3使用进阶 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2018/09/29/i3%E4%BD%BF%E7%94%A8%E8%BF%9B%E9%98%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          i3使用进阶
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-09-29 11:53:29" itemprop="dateCreated datePublished" datetime="2018-09-29T11:53:29+08:00">2018-09-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-03 01:49:50" itemprop="dateModified" datetime="2019-10-03T01:49:50+08:00">2019-10-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>前一篇文章讲解了i3的基础使用,而这一篇的主要内容则是将i3”桌面化”</p>
+<h2 id="字体修改"><a href="#字体修改" class="headerlink" title="字体修改"></a>字体修改</h2><h3 id="更改i3的title和bar字体"><a href="#更改i3的title和bar字体" class="headerlink" title="更改i3的title和bar字体"></a>更改i3的title和bar字体</h3><p>首先,下载字体的ttf文件,例如apple的<code>Yosemite San Francisco</code>:<a href="https://github.com/supermarin/YosemiteSanFranciscoFont/archive/master.zip" target="_blank" rel="noopener">https://github.com/supermarin/YosemiteSanFranciscoFont/archive/master.zip</a></p>
+<p>其次,将ttf字体文件移动至家目录的.font文件夹:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">]$ cp *.ttf ~&#x2F;.fonts</span><br></pre></td></tr></table></figure>
+
+<p>然后,修改i3的配置文件,更改使用字体:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">font pango:System San Francisco Display 12</span><br></pre></td></tr></table></figure>
+
+<p>重新加载i3,发现title和bar的字体已经更改</p>
+<h3 id="更改gtk程序字体"><a href="#更改gtk程序字体" class="headerlink" title="更改gtk程序字体"></a>更改gtk程序字体</h3><p>下载<code>lxappearance</code>程序,打开并修改字体大小,退出(lxappearance并不能检测到自定义字体,因此只需要让其生成配置文件,在配置文件中手动修改)</p>
+<p>打开生成的<code>.gtkrc-2.0</code>配置文件,修改字体:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gtk-font-name=<span class="string">"System San Francisco Display 10"</span></span><br></pre></td></tr></table></figure>
+
+<p>打开<code>.config/gtk-3.0/settings.ini</code>配置文件,修改字体:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gtk-font-name=System San Francisco Display 10</span><br></pre></td></tr></table></figure>
+
+<h2 id="更改window和bar的配色"><a href="#更改window和bar的配色" class="headerlink" title="更改window和bar的配色"></a>更改window和bar的配色</h2><p>修改i3配置文件,颜色根据自己喜好决定:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">set</span> <span class="variable">$bg</span>-color 	         <span class="comment">#2f343f</span></span><br><span class="line"><span class="built_in">set</span> <span class="variable">$inactive</span>-<span class="built_in">bg</span>-color   <span class="comment">#2f343f</span></span><br><span class="line"><span class="built_in">set</span> <span class="variable">$text</span>-color          <span class="comment">#f3f4f5</span></span><br><span class="line"><span class="built_in">set</span> <span class="variable">$inactive</span>-text-color <span class="comment">#676E7D</span></span><br><span class="line"><span class="built_in">set</span> <span class="variable">$urgent</span>-<span class="built_in">bg</span>-color     <span class="comment">#E53935</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># window colors</span></span><br><span class="line"><span class="comment">#                       border              background         text                 indicator</span></span><br><span class="line">client.focused          <span class="variable">$bg</span>-color           <span class="variable">$bg</span>-color          <span class="variable">$text</span>-color          <span class="comment">#00ff00</span></span><br><span class="line">client.unfocused        <span class="variable">$inactive</span>-<span class="built_in">bg</span>-color <span class="variable">$inactive</span>-<span class="built_in">bg</span>-color <span class="variable">$inactive</span>-text-color <span class="comment">#00ff00</span></span><br><span class="line">client.focused_inactive <span class="variable">$inactive</span>-<span class="built_in">bg</span>-color <span class="variable">$inactive</span>-<span class="built_in">bg</span>-color <span class="variable">$inactive</span>-text-color <span class="comment">#00ff00</span></span><br><span class="line">client.urgent           <span class="variable">$urgent</span>-<span class="built_in">bg</span>-color    <span class="variable">$urgent</span>-<span class="built_in">bg</span>-color   <span class="variable">$text</span>-color          <span class="comment">#00ff00</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># bar</span></span><br><span class="line">bar &#123;</span><br><span class="line">  	status_command i3status</span><br><span class="line">	colors &#123;</span><br><span class="line">		background <span class="variable">$bg</span>-color</span><br><span class="line">	    	separator <span class="comment">#757575</span></span><br><span class="line">		<span class="comment">#                  border             background         text</span></span><br><span class="line">		focused_workspace  <span class="variable">$bg</span>-color          <span class="variable">$bg</span>-color          <span class="variable">$text</span>-color</span><br><span class="line">		inactive_workspace <span class="variable">$inactive</span>-<span class="built_in">bg</span>-color <span class="variable">$inactive</span>-<span class="built_in">bg</span>-color <span class="variable">$inactive</span>-text-color</span><br><span class="line">		urgent_workspace   <span class="variable">$urgent</span>-<span class="built_in">bg</span>-color   <span class="variable">$urgent</span>-<span class="built_in">bg</span>-color   <span class="variable">$text</span>-color</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="去除边框"><a href="#去除边框" class="headerlink" title="去除边框"></a>去除边框</h2><p>i3默认在每个窗口都有一个顶部栏,可以设置不需要它:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hide_edge_borders both</span><br></pre></td></tr></table></figure>
+
+<h2 id="文件管理器"><a href="#文件管理器" class="headerlink" title="文件管理器"></a>文件管理器</h2><p>有个轻量级的文件管理器叫做<code>thunar</code>,可以图形化的查看文件</p>
+<p>如果打开后发现没有图标,可以下载自定义的图标.例如<code>gnome-icon-theme-full</code>,<code>kiconthemes</code></p>
+<h2 id="更改gtk主题"><a href="#更改gtk主题" class="headerlink" title="更改gtk主题"></a>更改gtk主题</h2><p>如果认为gtk默认主题不怎么好看的话,可以自行下载gtk相关主题.例如<code>arc</code>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">]$ sudo pacman -S arc-gtk-theme</span><br></pre></td></tr></table></figure>
+
+<p>下载安装后可以再<code>lxappearance</code>中应用它</p>
+<p>同样,也可以下载图标文件,并在<code>lxappearance</code>中应用</p>
+<h2 id="程序启动器"><a href="#程序启动器" class="headerlink" title="程序启动器"></a>程序启动器</h2><p>i3默认使用dmenu作为程序启动器,而rofi是另一个选择</p>
+<p>rofi的配置默认在<del>/.Xresource,或</del>/.config/rofi/config.可以先使用<code>rofi -dump-Xresources &gt; config</code>生成配置列表,再手动修改需要更改的配置.这里贴上我修改的配置:</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">rofi.width:</span>                          <span class="number">100</span></span><br><span class="line"><span class="attr">rofi.lines:</span>                          <span class="number">3</span></span><br><span class="line"><span class="attr">rofi.font:</span>                           <span class="string">System</span> <span class="string">San</span> <span class="string">Francisco</span> <span class="string">Display</span> <span class="number">18</span></span><br><span class="line"><span class="attr">rofi.bw:</span>                             <span class="number">0</span></span><br><span class="line"><span class="attr">rofi.padding:</span>                        <span class="number">800</span></span><br><span class="line"><span class="attr">rofi.eh:</span>                             <span class="number">2</span></span><br><span class="line"><span class="attr">rofi.color-normal:</span>                   <span class="comment">#a02f343f,#a0f3f4f5,#a02f343f,#a02f343f,#a09575cd</span></span><br><span class="line"><span class="attr">rofi.color-window:</span>                   <span class="comment">#a02f343f,#a02f343f,#a02f343f</span></span><br></pre></td></tr></table></figure>
+
+<p>默认rofi的透明度是不生效的,如果需要透明,要安装一个叫做<code>compton</code>的程序,并在后台启动:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">exec</span> --no-startup-id compton -f</span><br></pre></td></tr></table></figure>
+
+<p>注:添加-f参数有窗口切换时的渐变效果</p>
+<h2 id="bar"><a href="#bar" class="headerlink" title="bar"></a>bar</h2><p>i3的默认bar叫做i3bar,用来描述状态面板的信息.如配色,大小等等.之前我们已经对i3bar做过简单配置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">bar &#123;</span><br><span class="line">    i3bar_command i3bar -t</span><br><span class="line">    status_command i3blocks -c ~&#x2F;.config&#x2F;i3&#x2F;i3blocks.conf</span><br><span class="line">    position top </span><br><span class="line">    colors &#123;</span><br><span class="line">        background #a02f343f</span><br><span class="line">        separator #757575</span><br><span class="line">        #                  border             background         text</span><br><span class="line">        focused_workspace  #a02f343f          #a02f343f          #a0f3f4f5 </span><br><span class="line">        inactive_workspace #a02f343f #a02f343f #f3f4f5</span><br><span class="line">        urgent_workspace   #a0e53935 #a0e53935    #f3f4f5</span><br><span class="line">    &#125;   </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>i3的bar默认不支持透明度设置,而<code>i3-gaps</code>可以,需要启动i3bar时添加<code>-t</code>参数</p>
+<p>在面板上当然需要各种状态信息,这类信息由一个专门的程序提供,用户可以选择默认的状态程序(i3status),也可以使用其他丰富多样的程序(i3block,condy等等).从原理上,状态程序负责每间隔一段时间标准输出一段字符串,而i3bar负责将其显示到面板中</p>
+<p>这里我使用的是i3block,附上我们配置文件:</p>
+<p>i3blocks.conf:</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">command</span>=/usr/lib/i3blocks/<span class="variable">$BLOCK_NAME</span></span><br><span class="line"><span class="attr">separator_block_width</span>=<span class="number">15</span></span><br><span class="line"><span class="attr">markup</span>=none</span><br><span class="line"><span class="section">[volume_pactl]</span></span><br><span class="line"><span class="attr">label</span>=</span><br><span class="line"><span class="attr">instance</span>=Master</span><br><span class="line"><span class="attr">interval</span>=<span class="number">1</span></span><br><span class="line"><span class="attr">signal</span>=<span class="number">10</span></span><br><span class="line"><span class="section">[bandwidth]</span></span><br><span class="line"><span class="attr">interval</span>=<span class="number">1</span></span><br><span class="line"><span class="section">[battery]</span></span><br><span class="line"><span class="attr">label</span>=</span><br><span class="line"><span class="attr">interval</span>=<span class="number">30</span></span><br><span class="line"><span class="section">[time]</span></span><br><span class="line"><span class="attr">label</span>=</span><br><span class="line"><span class="attr">command</span>=date <span class="string">'+%H:%M:%S'</span></span><br><span class="line"><span class="attr">interval</span>=<span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>volume_pactl:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line"></span><br><span class="line">pactl list sinks|grep Volume|head -n1|grep -o -E <span class="string">'[0-9]+%'</span>|head -n1</span><br></pre></td></tr></table></figure>
+
+<p>最后,bandwidth文件的IN和OUT也改为了和</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E6%9D%82%E9%A1%B9/" rel="tag"><i class="fa fa-tag"></i> 杂项</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/09/23/i3%E5%88%9D%E6%AD%A5%E4%BD%BF%E7%94%A8/" rel="prev" title="i3初步使用">
+      <i class="fa fa-chevron-left"></i> i3初步使用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/10/04/gcc%E7%BC%96%E8%AF%91%E8%BF%87%E7%A8%8B/" rel="next" title="gcc编译过程">
+      gcc编译过程 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#字体修改"><span class="nav-number">1.</span> <span class="nav-text">字体修改</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#更改i3的title和bar字体"><span class="nav-number">1.1.</span> <span class="nav-text">更改i3的title和bar字体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#更改gtk程序字体"><span class="nav-number">1.2.</span> <span class="nav-text">更改gtk程序字体</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#更改window和bar的配色"><span class="nav-number">2.</span> <span class="nav-text">更改window和bar的配色</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#去除边框"><span class="nav-number">3.</span> <span class="nav-text">去除边框</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#文件管理器"><span class="nav-number">4.</span> <span class="nav-text">文件管理器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#更改gtk主题"><span class="nav-number">5.</span> <span class="nav-text">更改gtk主题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#程序启动器"><span class="nav-number">6.</span> <span class="nav-text">程序启动器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bar"><span class="nav-number">7.</span> <span class="nav-text">bar</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

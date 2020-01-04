@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="kubernetes中访问控制的第一道关卡是用户认证，接下来来到第二道关卡：权限授予。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubernetes中的访问控制-权限授予">
+<meta property="og:url" content="https://staight.github.io/2019/09/27/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E6%9D%83%E9%99%90%E6%8E%88%E4%BA%88/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="kubernetes中访问控制的第一道关卡是用户认证，接下来来到第二道关卡：权限授予。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://staight.github.io/2019/09/27/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E6%9D%83%E9%99%90%E6%8E%88%E4%BA%88/apiserver%E8%AE%BF%E9%97%AE%E6%B5%81%E7%A8%8B.png">
+<meta property="og:image" content="https://staight.github.io/2019/09/27/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E6%9D%83%E9%99%90%E6%8E%88%E4%BA%88/abac%E6%A8%A1%E5%BC%8F%E5%92%8Crbac%E6%A8%A1%E5%BC%8F%E7%9A%84%E5%8C%BA%E5%88%AB.png">
+<meta property="article:published_time" content="2019-09-27T02:50:09.000Z">
+<meta property="article:modified_time" content="2019-10-02T17:49:50.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="容器">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://staight.github.io/2019/09/27/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E6%9D%83%E9%99%90%E6%8E%88%E4%BA%88/apiserver%E8%AE%BF%E9%97%AE%E6%B5%81%E7%A8%8B.png">
+
+<link rel="canonical" href="https://staight.github.io/2019/09/27/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E6%9D%83%E9%99%90%E6%8E%88%E4%BA%88/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>kubernetes中的访问控制-权限授予 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2019/09/27/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E6%9D%83%E9%99%90%E6%8E%88%E4%BA%88/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          kubernetes中的访问控制-权限授予
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-09-27 10:50:09" itemprop="dateCreated datePublished" datetime="2019-09-27T10:50:09+08:00">2019-09-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-03 01:49:50" itemprop="dateModified" datetime="2019-10-03T01:49:50+08:00">2019-10-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>kubernetes中访问控制的第一道关卡是用户认证，接下来来到第二道关卡：权限授予。</p>
+<p><img src="apiserver%E8%AE%BF%E9%97%AE%E6%B5%81%E7%A8%8B.png" alt="apiserver访问流程"></p>
+<hr>
+<h2 id="API请求的内容"><a href="#API请求的内容" class="headerlink" title="API请求的内容"></a>API请求的内容</h2><p>在讨论权限授予之前，我们先看看发送至apiserver的请求中，包含了哪些内容。</p>
+<p>示例：获取test命名空间的名为test的pod的信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 .kube]# curl -k -XGET  -H &quot;Authorization: Bearer 275gX5MPWpNWYsHHoUePEFIvxo4uWAEs&quot; &#39;https:&#x2F;&#x2F;169.254.128.15:60002&#x2F;api&#x2F;v1&#x2F;namespaces&#x2F;test&#x2F;pods&#x2F;test&#39;</span><br><span class="line">&#123;</span><br><span class="line">  &quot;kind&quot;: &quot;Pod&quot;,</span><br><span class="line">  &quot;apiVersion&quot;: &quot;v1&quot;,</span><br><span class="line">  &quot;metadata&quot;: &#123;</span><br><span class="line">    &quot;name&quot;: &quot;test&quot;,</span><br><span class="line">    &quot;namespace&quot;: &quot;test&quot;,</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;spec&quot;: &#123;</span><br><span class="line">      &quot;something&quot;: &quot;something&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如上，该请求包括了：</p>
+<ul>
+<li>token：275gX5MPWpNWYsHHoUePEFIvxo4uWAEs，使用token标识着k8s中的一个用户</li>
+<li>url：<a href="https://169.254.128.15:60002/api/v1/namespaces/test/pods/test，包括apiserver地址，namespace，pod名。" target="_blank" rel="noopener">https://169.254.128.15:60002/api/v1/namespaces/test/pods/test，包括apiserver地址，namespace，pod名。</a></li>
+<li>HTTP请求方法：GET</li>
+</ul>
+<p>不难看出，该请求可以分为<code>主体</code>，<code>动作</code>和<code>资源</code>三部分，即主体：<code>主用户</code>，动作：<code>获取</code>，资源：<code>test命名空间下名为test的pod</code>。实际上，k8s对API请求也进行了类似于主体，动作，资源的划分，但更为细化，大体如下：</p>
+<ul>
+<li>user：访问的主体。</li>
+<li>apiverb：对资源执行的操作，包括get、list、create、update、patch、watch、proxy、redirect、delete和deletecollection等。</li>
+<li>resource：请求的目标资源的ID或名称。</li>
+<li>namespace：目标资源所属的名称空间，仅对拥有命名空间属性的资源有效。</li>
+<li>apiGroup：要访问的API组。默认为core API group。</li>
+</ul>
+<p>如果请求的并非是资源的话，那么划分将有些变化，大体如下：</p>
+<ul>
+<li>user：访问的主体。</li>
+<li>requestpath：请求的非资源型路径，如/api或/healthz。</li>
+<li>httpverb：要执行的操作，如get、post、put和delete。</li>
+</ul>
+<p>此外，如果资源下面还有子资源的话，可以使用<code>subresource</code>表示子资源。</p>
+<p>而权限授予，就是对<code>主体用户授予对指定资源执行指定动作的权限</code>方面的能力。</p>
+<hr>
+<h2 id="权限授予简介"><a href="#权限授予简介" class="headerlink" title="权限授予简介"></a>权限授予简介</h2><p>在k8s中，为了核验用户的操作许可，成功通过身份认证后的操作请求还需要转交给授权插件进行许可权限检查，以确保其拥有执行相应的操作的许可。</p>
+<p>apiserver主要支持如下授权插件：</p>
+<ul>
+<li>Node：一种特殊的授权模式，专门授权由kubelet访问的API请求。</li>
+<li>ABAC：Attribute-Based Access Control，基于属性的访问控制。</li>
+<li>RBAC：Role-Based Access Control，基于角色的访问控制。</li>
+<li>Webhook：基于HTTP回调机制通过外部REST服务检查确认用户授权的访问控制。</li>
+<li>AlwaysAllow：不进行权限限制，即授予所有权限。</li>
+<li>AlwaysDeny：拒绝所有权限的授予，仅用于测试。</li>
+</ul>
+<p>目前主流的授权插件是RBAC，针对kubelet也可同时使用Node插件。</p>
+<p>可以在API Server启动时，传入<code>--authorization-mode=MODE</code>参数来指定授权插件，可同时选择多个授权插件。</p>
+<p>接下来说说k8s中主流的两种权限授予插件：ABAC和RBAC。</p>
+<hr>
+<h2 id="ABAC模式"><a href="#ABAC模式" class="headerlink" title="ABAC模式"></a>ABAC模式</h2><p>ABAC（Attribute-Based Access Control，基于属性的访问控制）通过匹配策略对象来实现权限授予，每一个策略对象都包含多种属性：</p>
+<ul>
+<li>version属性：表示“我是策略对象”，是策略对象的元数据，包括固定的apiVersion和kind。</li>
+<li>subject-matching属性：表示发送访问请求的用户或组，包括user和group，两者选其一。</li>
+<li>resource-matching属性：表示要访问的资源对象，包括apiGroup，namespace，resource。</li>
+<li>non-resource-matching属性：表示要访问的非资源对象，包括nonResourcePath，即该非资源对象的路径。</li>
+<li>readonly属性：表示是否只读，只读操作包括get，list和watch。</li>
+</ul>
+<p>策略对象示例：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">"apiVersion"</span>:<span class="string">"abac.authorization.kubernetes.io/v1beta1"</span>,</span><br><span class="line">    <span class="attr">"kind"</span>:<span class="string">"Policy"</span>,</span><br><span class="line">    <span class="attr">"spec"</span>:&#123;</span><br><span class="line">        <span class="attr">"user"</span>:<span class="string">"kubelet"</span>,</span><br><span class="line">        <span class="attr">"namespace"</span>:<span class="string">"*"</span>,</span><br><span class="line">        <span class="attr">"resource"</span>:<span class="string">"pods"</span>,</span><br><span class="line">        <span class="attr">"readonly"</span>:<span class="literal">true</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如上，允许名为kubelet的用户对任意命名空间的pods对象执行get，list和watch操作。</p>
+<p>包含多个这样的策略对象的文件叫做<code>策略文件</code>，该文件的每一行均是一个策略对象，示例：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="attr">"apiVersion"</span>: <span class="string">"abac.authorization.kubernetes.io/v1beta1"</span>, <span class="attr">"kind"</span>: <span class="string">"Policy"</span>, <span class="attr">"spec"</span>: &#123;<span class="attr">"user"</span>:<span class="string">"kubelet"</span>,   <span class="attr">"namespace"</span>: <span class="string">"*"</span>, <span class="attr">"resource"</span>: <span class="string">"events"</span> &#125;&#125;</span><br><span class="line">&#123;<span class="attr">"apiVersion"</span>: <span class="string">"abac.authorization.kubernetes.io/v1beta1"</span>, <span class="attr">"kind"</span>: <span class="string">"Policy"</span>, <span class="attr">"spec"</span>: &#123;<span class="attr">"user"</span>:<span class="string">"alice"</span>,     <span class="attr">"namespace"</span>: <span class="string">"projectCaribou"</span>, <span class="attr">"resource"</span>: <span class="string">"*"</span>, <span class="attr">"apiGroup"</span>: <span class="string">"*"</span> &#125;&#125;</span><br><span class="line">&#123;<span class="attr">"apiVersion"</span>: <span class="string">"abac.authorization.kubernetes.io/v1beta1"</span>, <span class="attr">"kind"</span>: <span class="string">"Policy"</span>, <span class="attr">"spec"</span>: &#123;<span class="attr">"user"</span>:<span class="string">"bob"</span>,       <span class="attr">"namespace"</span>: <span class="string">"projectCaribou"</span>, <span class="attr">"resource"</span>: <span class="string">"*"</span>, <span class="attr">"apiGroup"</span>: <span class="string">"*"</span>, <span class="attr">"readonly"</span>: <span class="literal">true</span> &#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>apiserver在启动时使用<code>--authorization-policy-file=POLICYFILE</code>参数指定策略文件。如果需要新增策略对象，则要添加至策略文件，然后重启apiserver。</p>
+<hr>
+<h2 id="RBAC模式"><a href="#RBAC模式" class="headerlink" title="RBAC模式"></a>RBAC模式</h2><p>RBAC（Role-Based Access Control，基于角色的访问控制）可以说是ABAC模式的改进版，比起ABAC模式直接将规则分配给用户，RBAC模式则是将规则分配给角色，然后再将角色应用至用户。</p>
+<p>如下是ABAC模式和RBAC模式的区别：</p>
+<p><img src="abac%E6%A8%A1%E5%BC%8F%E5%92%8Crbac%E6%A8%A1%E5%BC%8F%E7%9A%84%E5%8C%BA%E5%88%AB.png" alt="abac模式和rbac模式的区别"></p>
+<p>比如说有两个规则，规则1是对命名空间test1中所有pod资源的读操作，规则2是对命名空间test2中名为test的pod资源的读写操作；如果同时有3个用户需要这两个规则的话，ABAC模式需要定义6个包括用户和规则的策略对象，而RBAC模式则只需要定义一个包含两个规则的角色，然后绑定至3个用户即可。</p>
+<p>在ABAC模式中，新增策略需要通过写入策略文件然后重启apiserver，而RBAC模式则能够在运行中添加策略。为此，k8s新增加了两对资源对象：role和rolebinding，clusterrole和clusterrolebinding。</p>
+<h3 id="role"><a href="#role" class="headerlink" title="role"></a>role</h3><p>role即角色，角色是对一组权限的封装，它包含一个或多个权限。</p>
+<p>role配置文件示例：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">rbac.authorization.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Role</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">test-role</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">test</span></span><br><span class="line"><span class="attr">rules:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">apiGroups:</span> <span class="comment"># apiGroups为空表示使用core API group</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">""</span></span><br><span class="line">  <span class="attr">resourceNames:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">test</span></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">configmaps</span></span><br><span class="line">  <span class="attr">verbs:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">get</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">apiGroups:</span> <span class="string">[""]</span></span><br><span class="line">  <span class="attr">resources:</span> <span class="string">["secrets"]</span></span><br><span class="line">  <span class="attr">verbs:</span> <span class="string">["get",</span> <span class="string">"watch"</span><span class="string">,</span> <span class="string">"list"</span><span class="string">]</span></span><br></pre></td></tr></table></figure>
+
+<p>如上，该配置文件定义了一个名为<code>test-role</code>的角色，它定义了两个规则，规则1是对命名空间<code>test</code>中名为<code>test</code>的<code>configmap</code>资源执行<code>get</code>的操作，规则2是对命名空间<code>test</code>中所有的<code>secret</code>资源执行<code>get</code>，<code>watch</code>，<code>list</code>操作。</p>
+<p>编写完role配置文件后就可以去创建它：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl create -f role.yml </span><br><span class="line">role.rbac.authorization.k8s.io&#x2F;test-role created</span><br></pre></td></tr></table></figure>
+
+<p>查看该role资源：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl -ntest get role</span><br><span class="line">NAME        AGE</span><br><span class="line">test-role   61s</span><br></pre></td></tr></table></figure>
+
+<p>该role资源的描述：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl -ntest describe role test-role</span><br><span class="line">Name:         test-role</span><br><span class="line">Labels:       &lt;none&gt;</span><br><span class="line">Annotations:  &lt;none&gt;</span><br><span class="line">PolicyRule:</span><br><span class="line">  Resources   Non-Resource URLs  Resource Names  Verbs</span><br><span class="line">  ---------   -----------------  --------------  -----</span><br><span class="line">  secrets     []                 []              [get watch list]</span><br><span class="line">  configmaps  []                 [test]          [get]</span><br></pre></td></tr></table></figure>
+
+<h3 id="rolebinding"><a href="#rolebinding" class="headerlink" title="rolebinding"></a>rolebinding</h3><p>在定义完角色后，还需要将其绑定至用户上，这步操作可以使用rolebinding资源来完成。</p>
+<p>rolebinding也是拥有命名空间属性的资源，它要求绑定的角色必须在同一命名空间下，或者使用<code>clusterrole</code>表示生效于该命名空间范围内（此时clusterrole相当于定义了namespace的role）。</p>
+<p>为了演示，新创建一个serviceaccount/test-serviceaccount：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl create serviceaccount -ntest test-serviceaccount</span><br><span class="line">serviceaccount&#x2F;test-serviceaccount created</span><br></pre></td></tr></table></figure>
+
+<p>rolebinding配置文件示例：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">rbac.authorization.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">RoleBinding</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">test-rolebinding</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">test</span></span><br><span class="line"><span class="attr">roleRef:</span></span><br><span class="line">  <span class="attr">apiGroup:</span> <span class="string">rbac.authorization.k8s.io</span></span><br><span class="line">  <span class="attr">kind:</span> <span class="string">Role</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">test-role</span></span><br><span class="line"><span class="attr">subjects:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">kind:</span> <span class="string">ServiceAccount</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">test-serviceaccount</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">test</span></span><br></pre></td></tr></table></figure>
+
+<p>该rolebinding配置文件绑定了名为test-role的角色和名为test-serviceaccount的用户。kind除了<code>ServiceAccount</code>以外，还可以使用<code>User</code>，表示普通用户，<code>Group</code>表示组。</p>
+<p>接着创建它：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl create -f rolebinding.yml </span><br><span class="line">rolebinding.rbac.authorization.k8s.io&#x2F;test-rolebinding created</span><br></pre></td></tr></table></figure>
+
+<p>这就绑定好了，接下来我们尝试着查看serviceaccount/test-serviceaccount的token，修改kubeconfig文件，更换token和apiserver通信：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl describe -ntest secret&#x2F;test-serviceaccount-token-wt5cn</span><br><span class="line">Name:         test-serviceaccount-token-wt5cn</span><br><span class="line">Namespace:    test</span><br><span class="line"></span><br><span class="line">Data</span><br><span class="line">&#x3D;&#x3D;&#x3D;&#x3D;</span><br><span class="line">ca.crt:     1025 bytes</span><br><span class="line">namespace:  4 bytes</span><br><span class="line">token: test-serviceaccount&#39;s token</span><br><span class="line">[root@node1 test]# vim ~&#x2F;.kube&#x2F;config</span><br></pre></td></tr></table></figure>
+
+<p>尝试获取test命名空间下的secret：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl get -ntest secret</span><br><span class="line">NAME                              TYPE                                  DATA   AGE</span><br><span class="line">default-token-s858v               kubernetes.io&#x2F;service-account-token   3      30h</span><br><span class="line">test-serviceaccount-token-wt5cn   kubernetes.io&#x2F;service-account-token   3      12m</span><br><span class="line">test-token-bjf5m                  kubernetes.io&#x2F;service-account-token   3      26h</span><br></pre></td></tr></table></figure>
+
+<p>成功获取，尝试获取test命名空间下的pod：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl get -ntest pod</span><br><span class="line">Error from server (Forbidden): pods is forbidden: User &quot;system:serviceaccount:test:test-serviceaccount&quot; cannot list resource &quot;pods&quot; in API group &quot;&quot; in the namespace &quot;test&quot;</span><br></pre></td></tr></table></figure>
+
+<p>无权限，获取失败。</p>
+<h3 id="clusterrole"><a href="#clusterrole" class="headerlink" title="clusterrole"></a>clusterrole</h3><p>role资源是隶属于命名空间之下的，用于那些拥有命名空间属性的资源。如果想要关联所有命名空间，或者是无命名空间属性的资源，就需要使用clusterrole。</p>
+<p>clusterrole配置文件示例：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">kind:</span> <span class="string">ClusterRole</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">rbac.authorization.k8s.io/v1</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="comment"># 无需namespace字段</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">test-clusterrole</span></span><br><span class="line"><span class="attr">rules:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">apiGroups:</span> <span class="string">[""]</span></span><br><span class="line">  <span class="attr">resources:</span> <span class="string">["secrets"]</span></span><br><span class="line">  <span class="attr">verbs:</span> <span class="string">["get",</span> <span class="string">"watch"</span><span class="string">,</span> <span class="string">"list"</span><span class="string">]</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">apiGroups:</span> <span class="string">[""]</span></span><br><span class="line">  <span class="attr">resources:</span> <span class="string">["namespaces"]</span></span><br><span class="line">  <span class="attr">verbs:</span> <span class="string">["*"]</span></span><br></pre></td></tr></table></figure>
+
+<p>如上，其定义了一个名为test-clusterrole的clusterrole资源，它有两个规则，规则1是对所有命名空间的secret资源执行<code>get</code>，<code>watch</code>，<code>list</code>操作；规则2是对无命名空间属性的namespace资源进行所有操作。</p>
+<p>接着创建它：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl create -f clusterrole.yaml </span><br><span class="line">clusterrole.rbac.authorization.k8s.io&#x2F;test-clusterrole created</span><br></pre></td></tr></table></figure>
+
+<p>clusterrole/test-clusterrole的描述：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl describe clusterrole test-clusterrole </span><br><span class="line">Name:         test-clusterrole</span><br><span class="line">Labels:       &lt;none&gt;</span><br><span class="line">Annotations:  &lt;none&gt;</span><br><span class="line">PolicyRule:</span><br><span class="line">  Resources  Non-Resource URLs  Resource Names  Verbs</span><br><span class="line">  ---------  -----------------  --------------  -----</span><br><span class="line">  secrets    []                 []              [get watch list]</span><br><span class="line">  namespaces  []                 []              [*]</span><br></pre></td></tr></table></figure>
+
+<h3 id="clusterrolebinding"><a href="#clusterrolebinding" class="headerlink" title="clusterrolebinding"></a>clusterrolebinding</h3><p>clusterrolebinding用于将clusterrole绑定至用户上。</p>
+<p>clusterrolebinding示例：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">rbac.authorization.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ClusterRoleBinding</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">test-clusterrolebinding</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">test</span></span><br><span class="line"><span class="attr">roleRef:</span></span><br><span class="line">  <span class="attr">apiGroup:</span> <span class="string">rbac.authorization.k8s.io</span></span><br><span class="line">  <span class="attr">kind:</span> <span class="string">ClusterRole</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">test-clusterrole</span></span><br><span class="line"><span class="attr">subjects:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">kind:</span> <span class="string">ServiceAccount</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">test-serviceaccount</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">test</span></span><br></pre></td></tr></table></figure>
+
+<p>该配置文件将clusterrole/test-clusterrole绑定至serviceaccount/test-serviceaccount上，接着创建它：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl create -f clusterrolebinding.yml </span><br><span class="line">clusterrolebinding.rbac.authorization.k8s.io&#x2F;test-clusterrolebinding created</span><br></pre></td></tr></table></figure>
+
+<p>切换至serviceaccount/test-serviceaccount用户，查看default命名空间的secret：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl get -ndefault secret</span><br><span class="line">NAME                  TYPE                                  DATA   AGE</span><br><span class="line">default-token-qpg5z   kubernetes.io&#x2F;service-account-token   3      31d</span><br><span class="line">nginx-ingress         Opaque                                1      29d</span><br><span class="line">qcloudregistrykey     kubernetes.io&#x2F;dockercfg               1      31d</span><br><span class="line">tencenthubkey         kubernetes.io&#x2F;dockercfg               1      31d</span><br></pre></td></tr></table></figure>
+
+<p>查看所有的命名空间：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl get namespace</span><br><span class="line">NAME              STATUS   AGE</span><br><span class="line">default           Active   31d</span><br><span class="line">kube-node-lease   Active   10d</span><br><span class="line">kube-public       Active   31d</span><br><span class="line">kube-system       Active   31d</span><br><span class="line">test              Active   31h</span><br></pre></td></tr></table></figure>
+
+<p>查看pod：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 test]# kubectl get pod</span><br><span class="line">Error from server (Forbidden): pods is forbidden: User &quot;system:serviceaccount:test:test-serviceaccount&quot; cannot list resource &quot;pods&quot; in API group &quot;&quot; in the namespace &quot;default&quot;</span><br></pre></td></tr></table></figure>
+
+<p>无权限，查看失败。</p>
+<hr>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><ul>
+<li>在k8s中，权限规则往往包括主体，对象，动作，用以描述api请求进行的操作。</li>
+<li>k8s内置了多种权限插件，包括ABAC，RBAC，Webhook，Node以及往往用于测试的AlwaysAllow和AlwaysDeny，目前主流的插件是RBAC。</li>
+<li>RBAC模式使用了role，clusterrole，rolebinding，clusterrolebinding四种资源对象，用以动态变更权限策略。</li>
+</ul>
+<hr>
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p><a href="http://docs.kubernetes.org.cn/148.html" target="_blank" rel="noopener">Kubernetes中使用RBAC授权</a></p>
+<p><a href="https://jimmysong.io/kubernetes-handbook/concepts/rbac.html" target="_blank" rel="noopener">RBAC——基于角色的访问控制</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E5%AE%B9%E5%99%A8/" rel="tag"><i class="fa fa-tag"></i> 容器</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/09/26/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81/" rel="prev" title="kubernetes中的访问控制-用户认证">
+      <i class="fa fa-chevron-left"></i> kubernetes中的访问控制-用户认证
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/09/29/kubernetes%E4%B8%AD%E7%9A%84%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6-%E5%87%86%E5%85%A5%E6%8E%A7%E5%88%B6/" rel="next" title="kubernetes中的访问控制-准入控制">
+      kubernetes中的访问控制-准入控制 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#API请求的内容"><span class="nav-number">1.</span> <span class="nav-text">API请求的内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#权限授予简介"><span class="nav-number">2.</span> <span class="nav-text">权限授予简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ABAC模式"><span class="nav-number">3.</span> <span class="nav-text">ABAC模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RBAC模式"><span class="nav-number">4.</span> <span class="nav-text">RBAC模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#role"><span class="nav-number">4.1.</span> <span class="nav-text">role</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rolebinding"><span class="nav-number">4.2.</span> <span class="nav-text">rolebinding</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#clusterrole"><span class="nav-number">4.3.</span> <span class="nav-text">clusterrole</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#clusterrolebinding"><span class="nav-number">4.4.</span> <span class="nav-text">clusterrolebinding</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档"><span class="nav-number">6.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

